@@ -2,6 +2,7 @@ package routes
 
 import (
 	"keep_coding_blog/api"
+	"keep_coding_blog/config"
 	"keep_coding_blog/middleware"
 
 	"github.com/gin-gonic/gin"
@@ -20,9 +21,10 @@ func SetupRoutes(r *gin.Engine, logger *logrus.Logger) {
 	// 公开路由
 	public := r.Group("/api")
 	{
-		// 用户相关
+		// 用户相关（公开访问）
 		public.POST("/register", userController.Register)
 		public.POST("/login", userController.Login)
+		public.POST("/refresh", userController.RefreshToken)
 
 		// 文章相关（公开访问）
 		public.GET("/posts", postController.GetPosts)
@@ -31,15 +33,18 @@ func SetupRoutes(r *gin.Engine, logger *logrus.Logger) {
 		// 评论相关（公开访问）
 		public.GET("/comments", commentController.GetComments)
 
-		// 搜索相关
+		// 搜索相关（公开访问）
 		public.GET("/posts/search", postController.SearchPosts)
 		public.GET("/tags", postController.GetTags)
 	}
 
 	// 需要认证的路由
 	protected := r.Group("/api")
-	protected.Use(middleware.AuthMiddleware())
+	protected.Use(middleware.AuthMiddleware(&config.GetConfig().JWT))
 	{
+		// 用户相关（需要认证）
+		protected.POST("/logout", userController.Logout)
+
 		// 文章相关（需要认证）
 		protected.POST("/posts", postController.CreatePost)
 		protected.PUT("/posts/:id", postController.UpdatePost)

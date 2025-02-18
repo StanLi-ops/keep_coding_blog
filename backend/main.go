@@ -39,6 +39,11 @@ func main() {
 		logger.Fatalf("Failed to initialize database: %v", err)
 	}
 
+	// 初始化Redis
+	if err := db.InitRedis(cfg); err != nil {
+		logger.Fatalf("Failed to initialize Redis: %v", err)
+	}
+
 	// 创建 Gin 实例
 	r := gin.Default()
 

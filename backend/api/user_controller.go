@@ -5,6 +5,9 @@ import (
 	"keep_coding_blog/service"
 	"net/http"
 
+	"keep_coding_blog/config"
+	"keep_coding_blog/db"
+
 	"github.com/gin-gonic/gin"
 	"github.com/sirupsen/logrus"
 )
@@ -36,7 +39,7 @@ type LoginRequest struct {
 	Password string `json:"password" binding:"required"`
 }
 
-// Register 注册用户
+// Register 处理注册请求
 func (c *UserController) Register(ctx *gin.Context) {
 	var req RegisterRequest
 	if err := ctx.ShouldBindJSON(&req); err != nil {
@@ -52,6 +55,7 @@ func (c *UserController) Register(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, gin.H{"message": "User registered successfully"})
 }
 
+// Login 处理登录请求
 func (c *UserController) Login(ctx *gin.Context) {
 	var req LoginRequest
 	if err := ctx.ShouldBindJSON(&req); err != nil {
@@ -65,15 +69,17 @@ func (c *UserController) Login(ctx *gin.Context) {
 		return
 	}
 
-	// 生成 JWT token
-	token, err := middleware.GenerateToken(user.ID, user.Username)
+	// 生成令牌对
+	cfg := config.GetConfig().JWT
+	accessToken, refreshToken, err := middleware.GenerateTokenPair(user.ID, user.Username, &cfg)
 	if err != nil {
-		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to generate token"})
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to generate tokens"})
 		return
 	}
 
 	ctx.JSON(http.StatusOK, gin.H{
-		"token": token,
+		"access_token":  accessToken,
+		"refresh_token": refreshToken,
 		"user": gin.H{
 			"id":       user.ID,
 			"username": user.Username,
@@ -81,4 +87,43 @@ func (c *UserController) Login(ctx *gin.Context) {
 			"role":     user.Role,
 		},
 	})
+}
+
+// RefreshToken 处理令牌刷新请求
+func (c *UserController) RefreshToken(ctx *gin.Context) {
+	cfg := config.GetConfig().JWT
+	accessToken, refreshToken, err := middleware.RefreshToken(ctx, &cfg)
+	if err != nil {
+		ctx.JSON(http.StatusUnauthorized, gin.H{"error": err.Error()})
+		return
+	}
+
+	ctx.JSON(http.StatusOK, gin.H{
+		"access_token":  accessToken,
+		"refresh_token": refreshToken,
+	})
+}
+
+// Logout 处理登出请求
+func (c *UserController) Logout(ctx *gin.Context) {
+	tokenID := ctx.GetString("token_id")
+	if tokenID == "" {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "No token found"})
+		return
+	}
+
+	// 将 access token 加入黑名单
+	cfg := config.GetConfig().JWT
+	if err := db.AddToBlacklist(ctx, tokenID, cfg.AccessTokenTTL); err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to logout"})
+		return
+	}
+
+	// 将 refresh token 加入黑名单
+	if err := db.AddToBlacklist(ctx, tokenID, cfg.RefreshTokenTTL); err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to logout"})
+		return
+	}
+
+	ctx.JSON(http.StatusOK, gin.H{"message": "Successfully logged out"})
 }
