@@ -51,20 +51,6 @@ func (c *CommentController) CreateComment(ctx *gin.Context) {
 	})
 }
 
-// GetAllComments 获取所有评论
-func (c *CommentController) GetAllComments(ctx *gin.Context) {
-	comments, err := c.commentService.GetAllComments()
-	if err != nil {
-		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-		return
-	}
-
-	ctx.JSON(http.StatusOK, gin.H{
-		"message":  "comments retrieved successfully",
-		"comments": comments,
-	})
-}
-
 // UpdateComment 更新评论
 func (c *CommentController) UpdateComment(ctx *gin.Context) {
 	id, err := strconv.ParseUint(ctx.Param("id"), 10, 32)

@@ -58,40 +58,59 @@ func InitBaseData(db *gorm.DB, logger *logrus.Logger) error {
 	// 初始化权限
 	permissions := []models.Permission{
 		// 用户管理权限
-		{Name: "查看用户", Code: "user:select", Method: "GET", Path: "/user", Description: "查看用户的信息"},
 		{Name: "创建用户", Code: "user:create", Method: "POST", Path: "/user", Description: "创建新用户"},
-		{Name: "编辑用户", Code: "user:edit", Method: "PUT", Path: "/user", Description: "编辑用户信息"},
-		{Name: "删除用户", Code: "user:delete", Method: "DELETE", Path: "/user", Description: "删除用户"},
+
+		{Name: "查看所有用户", Code: "users:select", Method: "GET", Path: "/users", Description: "查看所有用户信息"},
+		{Name: "查看指定用户", Code: "user:select", Method: "GET", Path: "/user/:id", Description: "查看指定用户信息"},
+		{Name: "查看指定用户所有文章", Code: "user:select:posts", Method: "GET", Path: "/user/:id/posts", Description: "查看指定用户所有文章信息"},
+		{Name: "查看指定用户所有评论", Code: "user:select:comments", Method: "GET", Path: "/user/:id/comments", Description: "查看指定用户所有评论信息"},
+
+		{Name: "编辑指定用户", Code: "user:edit", Method: "PUT", Path: "/user/:id", Description: "编辑指定用户信息"},
+		{Name: "编辑指定用户角色", Code: "user:edit:roles", Method: "PUT", Path: "/user/:id/role", Description: "编辑指定用户角色"},
+
+		{Name: "删除指定用户", Code: "user:delete", Method: "DELETE", Path: "/user/:id", Description: "删除指定用户"},
 
 		// 权限管理权限
-		{Name: "查看权限", Code: "permission:select", Method: "GET", Path: "/permission", Description: "查看权限信息"},
 		{Name: "创建权限", Code: "permission:create", Method: "POST", Path: "/permission", Description: "创建新权限"},
-		{Name: "编辑权限", Code: "permission:edit", Method: "PUT", Path: "/permission", Description: "编辑权限信息"},
-		{Name: "删除权限", Code: "permission:delete", Method: "DELETE", Path: "/permission", Description: "删除权限"},
+
+		{Name: "查看所有权限", Code: "permissions:select", Method: "GET", Path: "/permissions", Description: "查看所有权限信息"},
+		{Name: "查看指定权限", Code: "permission:select", Method: "GET", Path: "/permission/:id", Description: "查看指定权限信息"},
+
+		{Name: "编辑指定权限", Code: "permission:edit", Method: "PUT", Path: "/permission/:id", Description: "编辑指定权限信息"},
+
+		{Name: "删除指定权限", Code: "permission:delete", Method: "DELETE", Path: "/permission/:id", Description: "删除指定权限"},
 
 		// 角色管理权限
-		{Name: "查看角色", Code: "role:select", Method: "POST", Path: "/role", Description: "查看角色信息"},
 		{Name: "创建角色", Code: "role:create", Method: "POST", Path: "/role", Description: "创建新角色"},
-		{Name: "编辑角色", Code: "role:edit", Method: "PUT", Path: "/role", Description: "编辑角色信息"},
-		{Name: "删除角色", Code: "role:delete", Method: "DELETE", Path: "/role", Description: "删除角色"},
+
+		{Name: "查看所有角色", Code: "roles:select", Method: "GET", Path: "/roles", Description: "查看所有角色信息"},
+		{Name: "查看指定角色", Code: "role:select", Method: "GET", Path: "/role/:id", Description: "查看指定角色信息"},
+
+		{Name: "编辑指定角色", Code: "role:edit", Method: "PUT", Path: "/role/:id", Description: "编辑指定角色信息"},
+		{Name: "编辑指定角色权限", Code: "role:edit:permissions", Method: "PUT", Path: "/role/:id/permission", Description: "编辑指定角色权限"},
+
+		{Name: "删除指定角色", Code: "role:delete", Method: "DELETE", Path: "/role/:id", Description: "删除指定角色"},
 
 		// 标签管理权限
-		{Name: "查看标签", Code: "tag:select", Method: "GET", Path: "/tag", Description: "查看标签", IsDefault: true},
 		{Name: "创建标签", Code: "tag:create", Method: "POST", Path: "/tag", Description: "创建新标签"},
-		{Name: "编辑标签", Code: "tag:edit", Method: "PUT", Path: "/tag", Description: "编辑标签"},
-		{Name: "删除标签", Code: "tag:delete", Method: "DELETE", Path: "/tag", Description: "删除标签"},
+
+		{Name: "编辑指定标签", Code: "tag:edit", Method: "PUT", Path: "/tag/:id", Description: "编辑指定标签信息"},
+
+		{Name: "删除指定标签", Code: "tag:delete", Method: "DELETE", Path: "/tag/:id", Description: "删除指定标签"},
 
 		// 文章管理权限
-		{Name: "查看文章", Code: "post:select", Method: "GET", Path: "/post", Description: "查看文章", IsDefault: true},
 		{Name: "创建文章", Code: "post:create", Method: "POST", Path: "/post", Description: "创建新文章", IsDefault: true},
-		{Name: "编辑文章", Code: "post:edit", Method: "PUT", Path: "/post", Description: "编辑文章", IsDefault: true},
-		{Name: "删除文章", Code: "post:delete", Method: "DELETE", Path: "/post", Description: "删除文章", IsDefault: true},
+
+		{Name: "编辑指定文章", Code: "post:edit", Method: "PUT", Path: "/post/:id", Description: "编辑指定文章信息", IsDefault: true},
+
+		{Name: "删除指定文章", Code: "post:delete", Method: "DELETE", Path: "/post/:id", Description: "删除指定文章", IsDefault: true},
 
 		// 评论管理权限
-		{Name: "查看评论", Code: "comment:select", Method: "GET", Path: "/comment", Description: "查看评论", IsDefault: true},
 		{Name: "创建评论", Code: "comment:create", Method: "POST", Path: "/comment", Description: "创建新评论", IsDefault: true},
-		{Name: "编辑评论", Code: "comment:edit", Method: "PUT", Path: "/comment", Description: "编辑评论", IsDefault: true},
-		{Name: "删除评论", Code: "comment:delete", Method: "DELETE", Path: "/comment", Description: "删除评论", IsDefault: true},
+
+		{Name: "编辑指定评论", Code: "comment:edit", Method: "PUT", Path: "/comment/:id", Description: "编辑指定评论信息", IsDefault: true},
+
+		{Name: "删除指定评论", Code: "comment:delete", Method: "DELETE", Path: "/comment/:id", Description: "删除指定评论", IsDefault: true},
 	}
 
 	// 使用FirstOrCreate避免重复创建

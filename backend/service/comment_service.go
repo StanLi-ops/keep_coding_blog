@@ -55,15 +55,6 @@ func (s *CommentService) CreateComment(content string, postID, userID uint) (*mo
 	return comment, tx.Commit().Error
 }
 
-// GetAllComments 获取所有评论 (select)
-func (s *CommentService) GetAllComments() ([]models.Comment, error) {
-	var comments []models.Comment
-	if err := db.DB.Find(&comments).Error; err != nil {
-		return nil, err
-	}
-	return comments, nil
-}
-
 // UpdateComment 更新评论 (update)
 func (s *CommentService) UpdateComment(commentID, userID uint, content string) (*models.Comment, error) {
 	// 验证数据合法性

@@ -22,7 +22,10 @@ type Permission struct {
 type CreatePermissionRequest struct {
 	Name        string `json:"name" binding:"required"`
 	Code        string `json:"code" binding:"required"`
+	Method      string `json:"method" binding:"required"`
+	Path        string `json:"path" binding:"required"`
 	Description string `json:"description" binding:"required"`
+	IsDefault   bool   `json:"is_default"`
 }
 
 // UpdatePermissionRequest 更新权限请求结构体

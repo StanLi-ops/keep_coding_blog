@@ -40,6 +40,10 @@ func SetupRoutes(r *gin.Engine, logger *logrus.Logger) {
 			public.GET("/posts/:id", postController.GetPost)
 			public.GET("/posts/:id/comments", postController.GetPostComments)
 
+			// 标签相关
+			public.GET("/tags", tagController.GetAllTags)
+			public.GET("/tag/:id", tagController.GetTag)
+
 		}
 
 		// 私有路由
@@ -52,20 +56,20 @@ func SetupRoutes(r *gin.Engine, logger *logrus.Logger) {
 			private.Use(middleware.RBACAuth())
 			{
 				// 用户相关
-				private.POST("/user", userController.CreateUser)
+				private.POST("/user", userController.CreateUser) // 创建用户
 
-				private.GET("/users", userController.GetAllUsers)
-				private.GET("/user/:id", userController.GetUser)
-				private.GET("/user/:id/posts", userController.GetUserPosts)
-				private.GET("/user/:id/comments", userController.GetUserComments)
+				private.GET("/users", userController.GetAllUsers)                 // 获取所有用户
+				private.GET("/user/:id", userController.GetUser)                  // 获取指定用户
+				private.GET("/user/:id/posts", userController.GetUserPosts)       // 获取指定用户所有文章
+				private.GET("/user/:id/comments", userController.GetUserComments) // 获取指定用户所有评论
 
-				private.PUT("/user/:id", userController.UpdateUser)
-				private.PUT("/user/:id/roles", userController.UpdateUserRoles)
+				private.PUT("/user/:id", userController.UpdateUser)           // 编辑指定用户
+				private.PUT("/user/:id/role", userController.UpdateUserRoles) // 编辑指定用户角色
 
-				private.DELETE("/user/:id", userController.DeleteUser)
+				private.DELETE("/user/:id", userController.DeleteUser) // 删除指定用户
 
 				// 权限相关
-				private.POST("/permission", permissionController.CreatePermission)
+				private.POST("/permission", permissionController.CreatePermission) // 创建权限
 
 				private.GET("/permissions", permissionController.GetAllPermissions)
 				private.GET("/permission/:id", permissionController.GetPermission)
@@ -81,15 +85,12 @@ func SetupRoutes(r *gin.Engine, logger *logrus.Logger) {
 				private.GET("/role/:id", roleController.GetRole)
 
 				private.PUT("/role/:id", roleController.UpdateRole)
-				private.PUT("/role/:id/permissions", roleController.UpdatePermissions)
+				private.PUT("/role/:id/permission", roleController.UpdatePermissions)
 
 				private.DELETE("/role/:id", roleController.DeleteRole)
 
 				// 标签相关
 				private.POST("/tag", tagController.CreateTag)
-
-				private.GET("/tags", tagController.GetAllTags)
-				private.GET("/tag/:id", tagController.GetTag)
 
 				private.PUT("/tag/:id", tagController.UpdateTag)
 
@@ -104,8 +105,6 @@ func SetupRoutes(r *gin.Engine, logger *logrus.Logger) {
 
 				// 评论相关
 				private.POST("/comment", commentController.CreateComment)
-
-				public.GET("/comments", commentController.GetAllComments)
 
 				private.PUT("/comment/:id", commentController.UpdateComment)
 

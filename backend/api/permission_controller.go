@@ -32,7 +32,7 @@ func (c *PermissionController) CreatePermission(ctx *gin.Context) {
 		return
 	}
 
-	permission, err := c.permissionService.CreatePermission(req.Name, req.Code, req.Description)
+	permission, err := c.permissionService.CreatePermission(req.Name, req.Code, req.Method, req.Path, req.Description, req.IsDefault)
 	if err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
