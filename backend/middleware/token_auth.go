@@ -14,7 +14,7 @@ import (
 )
 
 // TokenClaims 令牌声明
-type TokenClaims struct {
+type JWTClaims struct {
 	UserID    uint   `json:"user_id"`
 	Username  string `json:"username"`
 	TokenID   string `json:"token_id"`
@@ -22,11 +22,11 @@ type TokenClaims struct {
 	jwt.StandardClaims
 }
 
-// GenerateTokenPair 生成访问令牌和刷新令牌
-func GenerateTokenPair(userID uint, username string, cfg *config.JWTConfig) (accessToken, refreshToken string, err error) {
+// CreateTokenPair 生成访问令牌和刷新令牌
+func CreateTokenPair(userID uint, username string, cfg *config.JWTConfig) (accessToken, refreshToken string, err error) {
 	// 生成访问令牌
 	accessTokenID := uuid.New().String()
-	accessClaims := TokenClaims{
+	accessClaims := JWTClaims{
 		UserID:    userID,
 		Username:  username,
 		TokenID:   accessTokenID,
@@ -44,7 +44,7 @@ func GenerateTokenPair(userID uint, username string, cfg *config.JWTConfig) (acc
 
 	// 生成 refresh token
 	refreshTokenID := uuid.New().String()
-	refreshClaims := TokenClaims{
+	refreshClaims := JWTClaims{
 		UserID:    userID,
 		Username:  username,
 		TokenID:   refreshTokenID,
@@ -64,7 +64,7 @@ func GenerateTokenPair(userID uint, username string, cfg *config.JWTConfig) (acc
 }
 
 // RefreshToken 刷新访问令牌
-func RefreshToken(c *gin.Context, cfg *config.JWTConfig) (string, string, error) {
+func RefreshJWTToken(c *gin.Context, cfg *config.JWTConfig) (string, string, error) {
 	// 获取 refresh token
 	refreshToken := c.GetHeader("Refresh-Token")
 	if refreshToken == "" {
@@ -72,7 +72,7 @@ func RefreshToken(c *gin.Context, cfg *config.JWTConfig) (string, string, error)
 	}
 
 	// 解析 refresh token
-	claims := &TokenClaims{}
+	claims := &JWTClaims{}
 	token, err := jwt.ParseWithClaims(refreshToken, claims, func(token *jwt.Token) (interface{}, error) {
 		if claims.TokenType != "refresh" {
 			return nil, errors.New("invalid token type")
@@ -96,11 +96,11 @@ func RefreshToken(c *gin.Context, cfg *config.JWTConfig) (string, string, error)
 	}
 
 	// 生成新的令牌对
-	return GenerateTokenPair(claims.UserID, claims.Username, cfg)
+	return CreateTokenPair(claims.UserID, claims.Username, cfg)
 }
 
-// AuthMiddleware 认证中间件
-func AuthMiddleware(cfg *config.JWTConfig) gin.HandlerFunc {
+// TokenAuth 令牌认证中间件
+func TokenAuth(cfg *config.JWTConfig) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		authHeader := c.GetHeader("Authorization")
 		if authHeader == "" {
@@ -119,7 +119,7 @@ func AuthMiddleware(cfg *config.JWTConfig) gin.HandlerFunc {
 
 		// 获取 access token
 		tokenString := parts[1]
-		claims := &TokenClaims{}
+		claims := &JWTClaims{}
 
 		// 解析 access token
 		token, err := jwt.ParseWithClaims(tokenString, claims, func(token *jwt.Token) (interface{}, error) {

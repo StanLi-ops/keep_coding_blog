@@ -32,10 +32,12 @@ type DatabaseConfig struct {
 
 // RedisConfig Redis配置结构体
 type RedisConfig struct {
-	Host     string
-	Port     string
-	Password string
-	DB       int
+	Host         string
+	Port         string
+	Password     string
+	DB           int
+	RBACPrefix   string
+	RBACCacheTTL time.Duration
 }
 
 // JWTConfig JWT配置结构体
@@ -63,10 +65,12 @@ func GetConfig() *Config {
 			SSLMode:      "disable",
 		},
 		Redis: RedisConfig{
-			Host:     "192.168.1.88",
-			Port:     "6379",
-			Password: "1",
-			DB:       0,
+			Host:         "192.168.1.88",
+			Port:         "6379",
+			Password:     "1",
+			DB:           0,
+			RBACPrefix:   "user_permissions:",
+			RBACCacheTTL: 30 * time.Minute,
 		},
 		JWT: JWTConfig{
 			AccessTokenSecret:  getEnvOrDefault("JWT_ACCESS_SECRET", "your-access-secret-key"),

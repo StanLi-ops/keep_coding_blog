@@ -4,23 +4,42 @@ import (
 	"errors"
 	"keep_coding_blog/db"
 	"keep_coding_blog/models"
-	"time"
 )
 
 // PostService 文章服务结构体
 type PostService struct{}
 
-// CreatePost 创建文章
+// CreatePost 创建文章 (insert)
 func (s *PostService) CreatePost(title, content string, userID uint, tagNames []string) (*models.Post, error) {
+	// 验证数据合法性
+	if title == "" || content == "" || userID == 0 {
+		return nil, errors.New("title, content, and userID cannot be empty")
+	}
+	if len(title) > 200 {
+		return nil, errors.New("title cannot be longer than 200 characters")
+	}
+
+	// 开始事务
+	tx := db.DB.Begin()
+	defer func() {
+		if r := recover(); r != nil {
+			tx.Rollback()
+		}
+	}()
+
+	// 检查文章标题是否已存在
+	var existingPost models.Post
+	if err := tx.Where("title = ?", title).First(&existingPost).Error; err == nil {
+		tx.Rollback()
+		return nil, errors.New("title already exists")
+	}
+
 	// 创建文章
 	post := &models.Post{
 		Title:   title,
 		Content: content,
 		UserID:  userID,
 	}
-
-	// 开启事务
-	tx := db.DB.Begin()
 
 	if err := tx.Create(post).Error; err != nil {
 		tx.Rollback()
@@ -44,19 +63,16 @@ func (s *PostService) CreatePost(title, content string, userID uint, tagNames []
 		}
 	}
 
-	if err := tx.Commit().Error; err != nil {
-		return nil, err
-	}
-
 	// 重新加载文章信息，包括关联的标签
-	if err := db.DB.Preload("Tags").Preload("User").First(post, post.ID).Error; err != nil {
+	if err := tx.Preload("Tags").Preload("User").First(post, post.ID).Error; err != nil {
+		tx.Rollback()
 		return nil, err
 	}
 
-	return post, nil
+	return post, tx.Commit().Error
 }
 
-// GetPost 获取单个文章
+// GetPost 获取单个文章 (select)
 func (s *PostService) GetPost(id uint) (*models.Post, error) {
 	var post models.Post
 	if err := db.DB.Preload("Tags").Preload("User").First(&post, id).Error; err != nil {
@@ -65,8 +81,8 @@ func (s *PostService) GetPost(id uint) (*models.Post, error) {
 	return &post, nil
 }
 
-// GetPosts 获取文章列表
-func (s *PostService) GetPosts(page, pageSize int) ([]models.Post, int64, error) {
+// GetAllPosts 获取文章列表 (select)
+func (s *PostService) GetAllPosts(page, pageSize int) ([]models.Post, int64, error) {
 	var posts []models.Post
 	var total int64
 
@@ -87,20 +103,47 @@ func (s *PostService) GetPosts(page, pageSize int) ([]models.Post, int64, error)
 	return posts, total, nil
 }
 
-// UpdatePost 更新文章
+// UpdatePost 更新文章 (update)
 func (s *PostService) UpdatePost(id uint, userID uint, title, content string, tagNames []string) (*models.Post, error) {
+	// 验证数据合法性
+	if id == 0 || userID == 0 || title == "" || content == "" {
+		return nil, errors.New("id, userID, title and content cannot be empty")
+	}
+	if len(title) > 200 {
+		return nil, errors.New("title cannot be longer than 200 characters")
+	}
+
+	// 开始事务
+	tx := db.DB.Begin()
+	defer func() {
+		if r := recover(); r != nil {
+			tx.Rollback()
+		}
+	}()
+
+	// 检查文章是否存在
 	var post models.Post
-	if err := db.DB.First(&post, id).Error; err != nil {
+	if err := tx.First(&post, id).Error; err != nil {
+		tx.Rollback()
 		return nil, err
 	}
 
 	// 检查是否是文章作者
 	if post.UserID != userID {
+		tx.Rollback()
 		return nil, errors.New("unauthorized to update this post")
 	}
 
-	// 开启事务
-	tx := db.DB.Begin()
+	// 检查标签是否存在
+	if len(tagNames) > 0 {
+		for _, tagName := range tagNames {
+			var tag models.Tag
+			if err := tx.Where("name = ?", tagName).First(&tag).Error; err != nil {
+				tx.Rollback()
+				return nil, err
+			}
+		}
+	}
 
 	// 更新文章基本信息
 	post.Title = title
@@ -131,32 +174,42 @@ func (s *PostService) UpdatePost(id uint, userID uint, title, content string, ta
 		}
 	}
 
-	if err := tx.Commit().Error; err != nil {
-		return nil, err
-	}
-
 	// 重新加载文章信息
-	if err := db.DB.Preload("Tags").Preload("User").First(&post, post.ID).Error; err != nil {
+	if err := tx.Preload("Tags").Preload("User").First(&post, post.ID).Error; err != nil {
+		tx.Rollback()
 		return nil, err
 	}
 
-	return &post, nil
+	return &post, tx.Commit().Error
 }
 
-// DeletePost 删除文章
+// DeletePost 删除文章 (delete)
 func (s *PostService) DeletePost(id uint, userID uint) error {
+	// 验证数据合法性
+	if id == 0 || userID == 0 {
+		return errors.New("id, userID cannot be empty")
+	}
+
+	// 开始事务
+	tx := db.DB.Begin()
+	defer func() {
+		if r := recover(); r != nil {
+			tx.Rollback()
+		}
+	}()
+
+	// 检查文章是否存在
 	var post models.Post
-	if err := db.DB.First(&post, id).Error; err != nil {
+	if err := tx.First(&post, id).Error; err != nil {
+		tx.Rollback()
 		return err
 	}
 
 	// 检查是否是文章作者
 	if post.UserID != userID {
+		tx.Rollback()
 		return errors.New("unauthorized to delete this post")
 	}
-
-	// 开启事务
-	tx := db.DB.Begin()
 
 	// 清除标签关联
 	if err := tx.Model(&post).Association("Tags").Clear(); err != nil {
@@ -173,7 +226,26 @@ func (s *PostService) DeletePost(id uint, userID uint) error {
 	return tx.Commit().Error
 }
 
-// SearchPosts 搜索文章
+// GetPostComments 获取文章的所有评论 (select)
+func (s *PostService) GetPostComments(postID uint) ([]models.Comment, int64, error) {
+	var comments []models.Comment
+	var total int64
+
+	// 获取评论
+	if err := db.DB.Where("post_id = ?", postID).Find(&comments).Error; err != nil {
+		return nil, 0, errors.New("failed to get post comments")
+	}
+
+	// 获取评论总数
+	if err := db.DB.Model(&models.Comment{}).Where("post_id = ?", postID).Count(&total).Error; err != nil {
+		return nil, 0, err
+	}
+
+	return comments, total, nil
+}
+
+/*
+// SearchPosts 搜索文章 (select)
 func (s *PostService) SearchPosts(query string, tags []string, startTime, endTime *time.Time, page, pageSize int) ([]models.Post, int64, error) {
 	var posts []models.Post
 	var total int64
@@ -219,11 +291,16 @@ func (s *PostService) SearchPosts(query string, tags []string, startTime, endTim
 	return posts, total, nil
 }
 
-// GetAllTags 获取所有标签
-func (s *PostService) GetAllTags() ([]models.Tag, error) {
+// GetPostTags 获取文章标签 (select)
+func (s *PostService) GetPostTags(postID uint) ([]models.Tag, error) {
 	var tags []models.Tag
-	if err := db.DB.Find(&tags).Error; err != nil {
+	if err := db.DB.Joins("JOIN post_tags ON posts.id = post_tags.post_id").
+		Joins("JOIN tags ON post_tags.tag_id = tags.id").
+		Where("posts.id = ?", postID).
+		Find(&tags).Error; err != nil {
 		return nil, err
 	}
 	return tags, nil
 }
+
+*/
