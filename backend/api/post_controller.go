@@ -32,7 +32,7 @@ func (c *PostController) CreatePost(ctx *gin.Context) {
 		return
 	}
 
-	userID, exists := ctx.Get("userID")
+	userID, exists := ctx.Get("user_id")
 	if !exists {
 		ctx.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
 		return
@@ -102,7 +102,7 @@ func (c *PostController) UpdatePost(ctx *gin.Context) {
 		return
 	}
 
-	userID, exists := ctx.Get("userID")
+	userID, exists := ctx.Get("user_id")
 	if !exists {
 		ctx.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
 		return
@@ -128,7 +128,7 @@ func (c *PostController) DeletePost(ctx *gin.Context) {
 		return
 	}
 
-	userID, exists := ctx.Get("userID")
+	userID, exists := ctx.Get("user_id")
 	if !exists {
 		ctx.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
 		return

@@ -32,7 +32,7 @@ func (c *RoleController) CreateRole(ctx *gin.Context) {
 		return
 	}
 
-	role, err := c.roleService.CreateRole(req.Name, req.Code, req.Description, req.PermissionIDs)
+	role, err := c.roleService.CreateRole(req.Name, req.Code, req.Description, req.PermissionIDs, req.IsDefault)
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -92,7 +92,7 @@ func (c *RoleController) UpdateRole(ctx *gin.Context) {
 		return
 	}
 
-	role, err := c.roleService.UpdateRole(uint(id), req.Name, req.Code, req.Description)
+	role, err := c.roleService.UpdateRole(uint(id), req.Name, req.Code, req.Description, req.IsDefault)
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return

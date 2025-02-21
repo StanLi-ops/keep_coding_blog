@@ -92,7 +92,7 @@ func (c *PermissionController) UpdatePermission(ctx *gin.Context) {
 		return
 	}
 
-	permission, err := c.permissionService.UpdatePermission(uint(id), req.Name, req.Code, req.Description)
+	permission, err := c.permissionService.UpdatePermission(uint(id), req.Name, req.Code, req.Description, req.IsDefault)
 	if err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return

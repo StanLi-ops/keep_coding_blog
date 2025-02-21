@@ -68,6 +68,7 @@ func RBACAuth() gin.HandlerFunc {
 			return
 		}
 
+		c.Set("user_id", userID)
 		c.Next()
 	}
 }

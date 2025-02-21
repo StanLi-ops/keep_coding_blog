@@ -11,7 +11,7 @@ import (
 type PermissionService struct{}
 
 // CreatePermission 创建权限 (insert)
-func (s *PermissionService) CreatePermission(name, code, method, path, description string, isDefault bool) (*models.Permission, error) {
+func (s *PermissionService) CreatePermission(name, code, method, path, description string, isDefault *bool) (*models.Permission, error) {
 	// 验证数据合法性
 	if name == "" || code == "" || method == "" || path == "" {
 		return nil, errors.New("name, code, method, and path cannot be empty")
@@ -42,7 +42,10 @@ func (s *PermissionService) CreatePermission(name, code, method, path, descripti
 		Method:      method,
 		Path:        path,
 		Description: description,
-		IsDefault:   isDefault,
+	}
+
+	if isDefault != nil {
+		permission.IsDefault = *isDefault
 	}
 
 	if err := tx.Create(permission).Error; err != nil {
@@ -72,7 +75,7 @@ func (s *PermissionService) GetAllPermissions() ([]models.Permission, error) {
 }
 
 // UpdatePermission 更新权限 (update)
-func (s *PermissionService) UpdatePermission(id uint, name, code, description string) (*models.Permission, error) {
+func (s *PermissionService) UpdatePermission(id uint, name, code, description string, isDefault *bool) (*models.Permission, error) {
 	// 验证数据合法性
 	if id == 0 || name == "" || code == "" {
 		return nil, errors.New("invalid input parameters")
@@ -108,7 +111,11 @@ func (s *PermissionService) UpdatePermission(id uint, name, code, description st
 	permission.Code = code
 	permission.Description = description
 
-	if err := tx.Save(&permission).Error; err != nil {
+	if isDefault != nil {
+		permission.IsDefault = *isDefault
+	}
+
+	if err := tx.Model(&permission).Select("name", "code", "description", "is_default").Updates(permission).Error; err != nil {
 		tx.Rollback()
 		return nil, err
 	}

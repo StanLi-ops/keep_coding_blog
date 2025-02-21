@@ -31,9 +31,9 @@ func SetupRoutes(r *gin.Engine, logger *logrus.Logger) {
 		public := blog.Group("")
 		{
 			// 用户相关
-			public.POST("/register", userController.Register)
-			public.POST("/login", userController.Login)
-			public.POST("/refresh", userController.RefreshToken)
+			public.POST("/register", userController.Register)    //注册
+			public.POST("/login", userController.Login)          //登录
+			public.POST("/refresh", userController.RefreshToken) //刷新token
 
 			// 文章相关
 			public.GET("/posts", postController.GetAllPosts)
@@ -71,44 +71,44 @@ func SetupRoutes(r *gin.Engine, logger *logrus.Logger) {
 				// 权限相关
 				private.POST("/permission", permissionController.CreatePermission) // 创建权限
 
-				private.GET("/permissions", permissionController.GetAllPermissions)
-				private.GET("/permission/:id", permissionController.GetPermission)
+				private.GET("/permissions", permissionController.GetAllPermissions) // 获取所有权限
+				private.GET("/permission/:id", permissionController.GetPermission)  // 获取指定权限
 
-				private.PUT("/permission/:id", permissionController.UpdatePermission)
+				private.PUT("/permission/:id", permissionController.UpdatePermission) // 编辑指定权限
 
-				private.DELETE("/permission/:id", permissionController.DeletePermission)
+				private.DELETE("/permission/:id", permissionController.DeletePermission) // 删除指定权限
 
 				// 角色相关
-				private.POST("/role", roleController.CreateRole)
+				private.POST("/role", roleController.CreateRole) // 创建角色
 
-				private.GET("/roles", roleController.GetAllRoles)
-				private.GET("/role/:id", roleController.GetRole)
+				private.GET("/roles", roleController.GetAllRoles) // 获取所有角色
+				private.GET("/role/:id", roleController.GetRole)  // 获取指定角色
 
-				private.PUT("/role/:id", roleController.UpdateRole)
-				private.PUT("/role/:id/permission", roleController.UpdatePermissions)
+				private.PUT("/role/:id", roleController.UpdateRole)                    // 编辑指定角色
+				private.PUT("/role/:id/permissions", roleController.UpdatePermissions) // 编辑指定角色权限
 
-				private.DELETE("/role/:id", roleController.DeleteRole)
+				private.DELETE("/role/:id", roleController.DeleteRole) // 删除指定角色
 
 				// 标签相关
-				private.POST("/tag", tagController.CreateTag)
+				private.POST("/tag", tagController.CreateTag) // 创建标签
 
-				private.PUT("/tag/:id", tagController.UpdateTag)
+				private.PUT("/tag/:id", tagController.UpdateTag) // 编辑指定标签
 
-				private.DELETE("/tag/:id", tagController.DeleteTag)
+				private.DELETE("/tag/:id", tagController.DeleteTag) // 删除指定标签
 
 				// 文章相关
-				private.POST("/post", postController.CreatePost)
+				private.POST("/post", postController.CreatePost) //创建文章
 
-				private.PUT("/post/:id", postController.UpdatePost)
+				private.PUT("/post/:id", postController.UpdatePost) //编辑指定文章
 
-				private.DELETE("/post/:id", postController.DeletePost)
+				private.DELETE("/post/:id", postController.DeletePost) //删除指定文章
 
 				// 评论相关
-				private.POST("/comment", commentController.CreateComment)
+				private.POST("/comment", commentController.CreateComment) //创建评论
 
-				private.PUT("/comment/:id", commentController.UpdateComment)
+				private.PUT("/comment/:id", commentController.UpdateComment) //编辑指定评论
 
-				private.DELETE("/comment/:id", commentController.DeleteComment)
+				private.DELETE("/comment/:id", commentController.DeleteComment) //删除指定评论
 			}
 		}
 

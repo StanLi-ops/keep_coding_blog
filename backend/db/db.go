@@ -87,7 +87,7 @@ func InitBaseData(db *gorm.DB, logger *logrus.Logger) error {
 		{Name: "查看指定角色", Code: "role:select", Method: "GET", Path: "/role/:id", Description: "查看指定角色信息"},
 
 		{Name: "编辑指定角色", Code: "role:edit", Method: "PUT", Path: "/role/:id", Description: "编辑指定角色信息"},
-		{Name: "编辑指定角色权限", Code: "role:edit:permissions", Method: "PUT", Path: "/role/:id/permission", Description: "编辑指定角色权限"},
+		{Name: "编辑指定角色权限", Code: "role:edit:permissions", Method: "PUT", Path: "/role/:id/permissions", Description: "编辑指定角色权限"},
 
 		{Name: "删除指定角色", Code: "role:delete", Method: "DELETE", Path: "/role/:id", Description: "删除指定角色"},
 

@@ -2,6 +2,7 @@ package service
 
 import (
 	"errors"
+	"fmt"
 	"keep_coding_blog/db"
 	"keep_coding_blog/models"
 )
@@ -11,6 +12,7 @@ type PostService struct{}
 
 // CreatePost 创建文章 (insert)
 func (s *PostService) CreatePost(title, content string, userID uint, tagNames []string) (*models.Post, error) {
+	fmt.Println(title, content, userID, tagNames)
 	// 验证数据合法性
 	if title == "" || content == "" || userID == 0 {
 		return nil, errors.New("title, content, and userID cannot be empty")

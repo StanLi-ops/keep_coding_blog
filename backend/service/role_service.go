@@ -13,7 +13,7 @@ import (
 type RoleService struct{}
 
 // CreateRole 创建角色 (insert)
-func (s *RoleService) CreateRole(name, code, description string, permissionIDs []uint) (*models.Role, error) {
+func (s *RoleService) CreateRole(name, code, description string, permissionIDs []uint, isDefault *bool) (*models.Role, error) {
 	// 验证数据合法性
 	if name == "" || code == "" {
 		return nil, errors.New("name and code cannot be empty")
@@ -51,6 +51,10 @@ func (s *RoleService) CreateRole(name, code, description string, permissionIDs [
 		Description: description,
 	}
 
+	if isDefault != nil {
+		role.IsDefault = *isDefault
+	}
+
 	if err := tx.Create(role).Error; err != nil {
 		tx.Rollback()
 		return nil, err
@@ -84,7 +88,7 @@ func (s *RoleService) GetAllRoles() ([]models.Role, error) {
 }
 
 // UpdateRole 更新角色 (update)
-func (s *RoleService) UpdateRole(id uint, name, code, description string) (*models.Role, error) {
+func (s *RoleService) UpdateRole(id uint, name, code, description string, isDefault *bool) (*models.Role, error) {
 	// 验证数据合法性
 	if id == 0 || name == "" || code == "" {
 		return nil, errors.New("invalid input parameters")
@@ -119,6 +123,10 @@ func (s *RoleService) UpdateRole(id uint, name, code, description string) (*mode
 	role.Name = name
 	role.Code = code
 	role.Description = description
+
+	if isDefault != nil {
+		role.IsDefault = *isDefault
+	}
 
 	if err := tx.Save(&role).Error; err != nil {
 		tx.Rollback()
