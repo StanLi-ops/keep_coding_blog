@@ -36,13 +36,13 @@ func SetupRoutes(r *gin.Engine, logger *logrus.Logger) {
 			public.POST("/refresh", userController.RefreshToken) //刷新token
 
 			// 文章相关
-			public.GET("/posts", postController.GetAllPosts)
-			public.GET("/posts/:id", postController.GetPost)
-			public.GET("/posts/:id/comments", postController.GetPostComments)
+			public.GET("/posts", postController.GetAllPosts)                  // 获取所有文章
+			public.GET("/posts/:id", postController.GetPost)                  // 获取指定文章
+			public.GET("/posts/:id/comments", postController.GetPostComments) // 获取指定文章评论
 
 			// 标签相关
-			public.GET("/tags", tagController.GetAllTags)
-			public.GET("/tag/:id", tagController.GetTag)
+			public.GET("/tags", tagController.GetAllTags) // 获取所有标签
+			public.GET("/tag/:id", tagController.GetTag)  // 获取指定标签
 
 		}
 
@@ -51,7 +51,7 @@ func SetupRoutes(r *gin.Engine, logger *logrus.Logger) {
 		private.Use(middleware.TokenAuth(&config.GetConfig().JWT))
 		{
 			// 用户相关
-			private.POST("/logout", userController.Logout)
+			private.POST("/logout", userController.Logout) // 退出登录
 
 			private.Use(middleware.RBACAuth())
 			{
