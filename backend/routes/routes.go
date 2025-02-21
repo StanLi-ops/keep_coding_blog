@@ -10,16 +10,26 @@ import (
 )
 
 // SetupRoutes 设置路由
-func SetupRoutes(r *gin.Engine, logger *logrus.Logger) {
-	userController := api.NewUserController(logger)
+func SetupRoutes(r *gin.Engine, logger *logrus.Logger, cfg *config.Config) {
+	userController := api.NewUserController(logger, cfg)
 	postController := api.NewPostController(logger)
 	commentController := api.NewCommentController(logger)
 	tagController := api.NewTagController(logger)
-	roleController := api.NewRoleController(logger)
+	roleController := api.NewRoleController(logger, cfg)
 	permissionController := api.NewPermissionController(logger)
 
-	// 添加静态文件服务
-	r.Static("/uploads", "./uploads")
+	loginLimiter := middleware.NewLoginLimiter(cfg)
+	rateLimiter := middleware.NewRateLimiter(cfg)
+	tokenAuther := middleware.NewTokenAuther(&cfg.JWT)
+
+	// 注入登录限制器到 gin context
+	r.Use(func(c *gin.Context) {
+		c.Set("login_limiter", loginLimiter)
+		c.Next()
+	})
+
+	r.Use(middleware.SecurityHeaders())
+	r.Use(middleware.XSSProtection())
 
 	// API 版本控制
 	v1 := r.Group("/api")
@@ -29,11 +39,12 @@ func SetupRoutes(r *gin.Engine, logger *logrus.Logger) {
 	{
 		// 公有路由
 		public := blog.Group("")
+		public.Use(rateLimiter.PublicAPILimit())
 		{
 			// 用户相关
-			public.POST("/register", userController.Register)    //注册
-			public.POST("/login", userController.Login)          //登录
-			public.POST("/refresh", userController.RefreshToken) //刷新token
+			public.POST("/register", userController.Register)                              //注册
+			public.POST("/login", loginLimiter.CheckLoginAttempts(), userController.Login) //登录
+			public.POST("/refresh", userController.RefreshToken)                           //刷新token
 
 			// 文章相关
 			public.GET("/posts", postController.GetAllPosts)                  // 获取所有文章
@@ -48,12 +59,12 @@ func SetupRoutes(r *gin.Engine, logger *logrus.Logger) {
 
 		// 私有路由
 		private := blog.Group("")
-		private.Use(middleware.TokenAuth(&config.GetConfig().JWT))
+		private.Use(tokenAuther.TokenAuth())
 		{
 			// 用户相关
 			private.POST("/logout", userController.Logout) // 退出登录
 
-			private.Use(middleware.RBACAuth())
+			private.Use(middleware.RBACAuth(cfg))
 			{
 				// 用户相关
 				private.POST("/user", userController.CreateUser) // 创建用户

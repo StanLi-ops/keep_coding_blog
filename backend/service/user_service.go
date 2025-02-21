@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"errors"
+	"keep_coding_blog/config"
 	"keep_coding_blog/db"
 	"keep_coding_blog/models"
 	"log"
@@ -242,7 +243,7 @@ func (s *UserService) DeleteUser(id uint) error {
 }
 
 // UpdateUserRoles 修改用户角色 (update)
-func (s *UserService) UpdateUserRoles(userID uint, roleID uint) (*models.User, error) {
+func (s *UserService) UpdateUserRoles(userID uint, roleID uint, cfg *config.Config) (*models.User, error) {
 	// 验证输入不为空
 	if userID == 0 || roleID == 0 {
 		return nil, errors.New("userID and roleID cannot be empty")
@@ -277,7 +278,7 @@ func (s *UserService) UpdateUserRoles(userID uint, roleID uint) (*models.User, e
 	}
 
 	// 清除用户Redis权限缓存
-	if err := db.DeleteUserPermissions(context.Background(), userID); err != nil {
+	if err := db.DeleteUserPermissions(context.Background(), userID, cfg); err != nil {
 		// 仅记录日志,不中断事务
 		log.Printf("Failed to delete permission cache: %v", err)
 	}

@@ -1,6 +1,7 @@
 package middleware
 
 import (
+	"keep_coding_blog/config"
 	"keep_coding_blog/db"
 	"keep_coding_blog/models"
 	"keep_coding_blog/service"
@@ -15,7 +16,7 @@ import (
 var userService *service.UserService
 
 // RBACAuth RBAC权限控制中间件
-func RBACAuth() gin.HandlerFunc {
+func RBACAuth(cfg *config.Config) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		// 从上下文获取当前登录用户
 		userID, exists := c.Get("user_id")
@@ -28,7 +29,7 @@ func RBACAuth() gin.HandlerFunc {
 		}
 
 		// 尝试从Redis获取权限
-		permissions, err := db.GetUserPermissions(c, userID.(uint))
+		permissions, err := db.GetUserPermissions(c, userID.(uint), cfg)
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to get permissions"})
 			c.Abort()
@@ -47,7 +48,7 @@ func RBACAuth() gin.HandlerFunc {
 			}
 
 			// 缓存到Redis
-			if err := db.SetUserPermissions(c, userID.(uint), permissions); err != nil {
+			if err := db.SetUserPermissions(c, userID.(uint), permissions, cfg); err != nil {
 				// 仅记录日志,不中断请求
 				log.Printf("Failed to cache permissions: %v", err)
 			}

@@ -7,10 +7,11 @@ import (
 
 // Config 配置结构体
 type Config struct {
-	Server   ServerConfig
-	Database DatabaseConfig
-	Redis    RedisConfig
-	JWT      JWTConfig
+	Server    ServerConfig
+	Database  DatabaseConfig
+	Redis     RedisConfig
+	JWT       JWTConfig
+	RateLimit RateLimitConfig
 }
 
 // ServerConfig 服务器配置结构体
@@ -30,6 +31,14 @@ type DatabaseConfig struct {
 	SSLMode      string
 }
 
+// RateLimitConfig 限流配置结构体
+type RateLimitConfig struct {
+	PublicAPILimit  int
+	PrivateAPILimit int
+	AuthAPILimit    int
+	Duration        time.Duration
+}
+
 // RedisConfig Redis配置结构体
 type RedisConfig struct {
 	Host         string
@@ -38,6 +47,7 @@ type RedisConfig struct {
 	DB           int
 	RBACPrefix   string
 	RBACCacheTTL time.Duration
+	RatePrefix   string
 }
 
 // JWTConfig JWT配置结构体
@@ -77,6 +87,12 @@ func GetConfig() *Config {
 			RefreshTokenSecret: getEnvOrDefault("JWT_REFRESH_SECRET", "your-refresh-secret-key"),
 			AccessTokenTTL:     15 * time.Minute,   // 访问令牌15分钟过期
 			RefreshTokenTTL:    7 * 24 * time.Hour, // 刷新令牌7天过期
+		},
+		RateLimit: RateLimitConfig{
+			PublicAPILimit:  100,         // 100次/分钟
+			PrivateAPILimit: 60,          // 60次/分钟
+			AuthAPILimit:    5,           // 5次/分钟
+			Duration:        time.Minute, // 1分钟时间窗口
 		},
 	}
 }

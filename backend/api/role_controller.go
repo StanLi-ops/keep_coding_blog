@@ -1,6 +1,7 @@
 package api
 
 import (
+	"keep_coding_blog/config"
 	"keep_coding_blog/models"
 	"keep_coding_blog/service"
 	"net/http"
@@ -12,13 +13,15 @@ import (
 
 // RoleController 角色控制器结构体
 type RoleController struct {
+	config      *config.Config
 	roleService service.RoleService
 	logger      *logrus.Logger
 }
 
 // NewRoleController 创建角色控制器实例
-func NewRoleController(logger *logrus.Logger) *RoleController {
+func NewRoleController(logger *logrus.Logger, config *config.Config) *RoleController {
 	return &RoleController{
+		config:      config,
 		roleService: service.RoleService{},
 		logger:      logger,
 	}
@@ -136,7 +139,7 @@ func (c *RoleController) UpdatePermissions(ctx *gin.Context) {
 		return
 	}
 
-	role, err := c.roleService.UpdatePermissions(uint(id), req.PermissionIDs)
+	role, err := c.roleService.UpdatePermissions(uint(id), req.PermissionIDs, c.config)
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return

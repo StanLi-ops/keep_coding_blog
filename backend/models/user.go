@@ -34,6 +34,7 @@ type CreateUserRequest struct {
 type LoginRequest struct {
 	Username string `json:"username" binding:"required"`
 	Password string `json:"password" binding:"required"`
+	Email    string `json:"email" binding:"required,email"`
 }
 
 // UpdateUserRequest 更新用户请求结构体

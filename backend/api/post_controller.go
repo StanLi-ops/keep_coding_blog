@@ -1,6 +1,7 @@
 package api
 
 import (
+	"keep_coding_blog/middleware"
 	"keep_coding_blog/models"
 	"keep_coding_blog/service"
 	"net/http"
@@ -31,6 +32,10 @@ func (c *PostController) CreatePost(ctx *gin.Context) {
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
+
+	// 对标题使用普通文本过滤，对内容使用 HTML 过滤
+	req.Title = middleware.SanitizeText(req.Title)
+	req.Content = middleware.SanitizeHTML(req.Content)
 
 	userID, exists := ctx.Get("user_id")
 	if !exists {
@@ -101,6 +106,10 @@ func (c *PostController) UpdatePost(ctx *gin.Context) {
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
+
+	// 对标题使用普通文本过滤，对内容使用 HTML 过滤
+	req.Title = middleware.SanitizeText(req.Title)
+	req.Content = middleware.SanitizeHTML(req.Content)
 
 	userID, exists := ctx.Get("user_id")
 	if !exists {

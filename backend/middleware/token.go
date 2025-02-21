@@ -13,6 +13,16 @@ import (
 	"github.com/google/uuid"
 )
 
+type TokenAuther struct {
+	config *config.JWTConfig
+}
+
+func NewTokenAuther(config *config.JWTConfig) *TokenAuther {
+	return &TokenAuther{
+		config: config,
+	}
+}
+
 // TokenClaims 令牌声明
 type JWTClaims struct {
 	UserID    uint   `json:"user_id"`
@@ -100,7 +110,7 @@ func RefreshJWTToken(c *gin.Context, cfg *config.JWTConfig) (string, string, err
 }
 
 // TokenAuth 令牌认证中间件
-func TokenAuth(cfg *config.JWTConfig) gin.HandlerFunc {
+func (t *TokenAuther) TokenAuth() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		authHeader := c.GetHeader("Authorization")
 		if authHeader == "" {
@@ -126,7 +136,7 @@ func TokenAuth(cfg *config.JWTConfig) gin.HandlerFunc {
 			if claims.TokenType != "access" {
 				return nil, errors.New("invalid token type")
 			}
-			return []byte(cfg.AccessTokenSecret), nil
+			return []byte(t.config.AccessTokenSecret), nil
 		})
 
 		// 检查 access token 是否有效

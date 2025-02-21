@@ -6,6 +6,8 @@ import (
 	"net/http"
 	"strconv"
 
+	"keep_coding_blog/middleware"
+
 	"github.com/gin-gonic/gin"
 	"github.com/sirupsen/logrus"
 )
@@ -31,6 +33,9 @@ func (c *TagController) CreateTag(ctx *gin.Context) {
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request body"})
 		return
 	}
+
+	// 对标签名使用普通文本过滤
+	req.Name = middleware.SanitizeText(req.Name)
 
 	tag, err := c.tagService.CreateTag(req.Name)
 	if err != nil {
@@ -91,6 +96,9 @@ func (c *TagController) UpdateTag(ctx *gin.Context) {
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request body"})
 		return
 	}
+
+	// 对标签名使用普通文本过滤
+	req.Name = middleware.SanitizeText(req.Name)
 
 	tag, err := c.tagService.UpdateTag(uint(id), req.Name)
 	if err != nil {

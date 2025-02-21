@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"errors"
+	"keep_coding_blog/config"
 	"keep_coding_blog/db"
 	"keep_coding_blog/models"
 	"log"
@@ -161,7 +162,7 @@ func (s *RoleService) DeleteRole(id uint) error {
 }
 
 // UpdatePermissions 更新角色权限 (update)
-func (s *RoleService) UpdatePermissions(roleID uint, permissionIDs []uint) (*models.Role, error) {
+func (s *RoleService) UpdatePermissions(roleID uint, permissionIDs []uint, cfg *config.Config) (*models.Role, error) {
 	// 验证数据合法性
 	if roleID == 0 || len(permissionIDs) == 0 {
 		return nil, errors.New("invalid input parameters")
@@ -227,7 +228,7 @@ func (s *RoleService) UpdatePermissions(roleID uint, permissionIDs []uint) (*mod
 
 	// 清除这些用户的Redis权限缓存
 	for _, user := range users {
-		if err := db.DeleteUserPermissions(context.Background(), user.ID); err != nil {
+		if err := db.DeleteUserPermissions(context.Background(), user.ID, cfg); err != nil {
 			// 仅记录日志,不中断事务
 			log.Printf("Failed to delete permission cache for user %d: %v", user.ID, err)
 		}

@@ -6,6 +6,8 @@ import (
 	"net/http"
 	"strconv"
 
+	"keep_coding_blog/middleware"
+
 	"github.com/gin-gonic/gin"
 	"github.com/sirupsen/logrus"
 )
@@ -31,6 +33,9 @@ func (c *CommentController) CreateComment(ctx *gin.Context) {
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request body"})
 		return
 	}
+
+	// 对评论内容使用 HTML 过滤
+	req.Content = middleware.SanitizeHTML(req.Content)
 
 	// 从上下文获取用户ID
 	userID := ctx.GetUint("user_id")
@@ -64,6 +69,9 @@ func (c *CommentController) UpdateComment(ctx *gin.Context) {
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request body"})
 		return
 	}
+
+	// 对评论内容使用 HTML 过滤
+	req.Content = middleware.SanitizeHTML(req.Content)
 
 	// 从上下文获取用户ID
 	userID := ctx.GetUint("user_id")

@@ -63,7 +63,7 @@ func main() {
 	})
 
 	// 设置路由
-	routes.SetupRoutes(r, logger)
+	routes.SetupRoutes(r, logger, cfg)
 
 	// 启动服务器
 	serverAddr := fmt.Sprintf(":%s", cfg.Server.Port)

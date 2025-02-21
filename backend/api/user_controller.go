@@ -16,13 +16,15 @@ import (
 
 // UserController 用户控制器
 type UserController struct {
+	config      *config.Config
 	userService *service.UserService
 	logger      *logrus.Logger
 }
 
 // NewUserController 创建用户控制器
-func NewUserController(logger *logrus.Logger) *UserController {
+func NewUserController(logger *logrus.Logger, config *config.Config) *UserController {
 	return &UserController{
+		config:      config,
 		userService: &service.UserService{},
 		logger:      logger,
 	}
@@ -35,6 +37,10 @@ func (c *UserController) Register(ctx *gin.Context) {
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
+
+	// 对用户名和邮箱使用普通文本过滤
+	req.Username = middleware.SanitizeText(req.Username)
+	req.Email = middleware.SanitizeText(req.Email)
 
 	user, err := c.userService.Register(req.Username, req.Password, req.Email)
 	if err != nil {
@@ -70,21 +76,30 @@ func (c *UserController) CreateUser(ctx *gin.Context) {
 
 // Login 登录用户
 func (c *UserController) Login(ctx *gin.Context) {
-	var req models.LoginRequest
-	if err := ctx.ShouldBindJSON(&req); err != nil {
-		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+	// 获取之前中间件设置的标识符和key
+	identifier := ctx.MustGet("login_identifier").(string)
+
+	// 获取登录限制器
+	loginLimiter := ctx.MustGet("login_limiter").(*middleware.LoginLimiter)
+
+	// 获取登录请求
+	login_request := ctx.MustGet("login_request").(models.LoginRequest)
+
+	// 登录
+	user, err := c.userService.Login(login_request.Username, login_request.Password)
+	if err != nil {
+		// 记录失败的登录尝试
+		loginLimiter.RecordLoginAttempt(ctx, false, identifier)
+
+		ctx.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid credentials"})
 		return
 	}
 
-	user, err := c.userService.Login(req.Username, req.Password)
-	if err != nil {
-		ctx.JSON(http.StatusUnauthorized, gin.H{"error": err.Error()})
-		return
-	}
+	// 登录成功，记录成功并清除失败计数
+	loginLimiter.RecordLoginAttempt(ctx, true, identifier)
 
 	// 生成令牌对
-	cfg := config.GetConfig().JWT
-	accessToken, refreshToken, err := middleware.CreateTokenPair(user.ID, user.Username, &cfg)
+	accessToken, refreshToken, err := middleware.CreateTokenPair(user.ID, user.Username, &c.config.JWT)
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to generate tokens"})
 		return
@@ -104,8 +119,7 @@ func (c *UserController) Login(ctx *gin.Context) {
 
 // RefreshToken 处理令牌刷新请求
 func (c *UserController) RefreshToken(ctx *gin.Context) {
-	cfg := config.GetConfig().JWT
-	accessToken, refreshToken, err := middleware.RefreshJWTToken(ctx, &cfg)
+	accessToken, refreshToken, err := middleware.RefreshJWTToken(ctx, &c.config.JWT)
 	if err != nil {
 		ctx.JSON(http.StatusUnauthorized, gin.H{"error": err.Error()})
 		return
@@ -128,8 +142,7 @@ func (c *UserController) Logout(ctx *gin.Context) {
 	}
 
 	// 将 access token 加入黑名单
-	cfg := config.GetConfig().JWT
-	if err := db.AddToBlacklist(ctx, tokenID, cfg.AccessTokenTTL); err != nil {
+	if err := db.AddToBlacklist(ctx, tokenID, c.config.JWT.AccessTokenTTL); err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to logout"})
 		return
 	}
@@ -187,6 +200,10 @@ func (c *UserController) UpdateUser(ctx *gin.Context) {
 		return
 	}
 
+	// 对用户名和邮箱使用普通文本过滤
+	req.Username = middleware.SanitizeText(req.Username)
+	req.Email = middleware.SanitizeText(req.Email)
+
 	user, err := c.userService.UpdateUser(uint(id), req.Username, req.Password, req.Email)
 	if err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
@@ -229,7 +246,7 @@ func (c *UserController) UpdateUserRoles(ctx *gin.Context) {
 		return
 	}
 
-	user, err := c.userService.UpdateUserRoles(uint(id), req.RoleID)
+	user, err := c.userService.UpdateUserRoles(uint(id), req.RoleID, c.config)
 	if err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
