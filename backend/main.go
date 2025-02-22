@@ -47,28 +47,21 @@ func main() {
 	// 创建 Gin 实例
 	r := gin.Default()
 
-	// 配置 CORS
-	r.Use(func(c *gin.Context) {
-		c.Writer.Header().Set("Access-Control-Allow-Origin", "*")
-		c.Writer.Header().Set("Access-Control-Allow-Credentials", "true")
-		c.Writer.Header().Set("Access-Control-Allow-Headers", "Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization, accept, origin, Cache-Control, X-Requested-With")
-		c.Writer.Header().Set("Access-Control-Allow-Methods", "POST, OPTIONS, GET, PUT, DELETE")
-
-		if c.Request.Method == "OPTIONS" {
-			c.AbortWithStatus(204)
-			return
-		}
-
-		c.Next()
-	})
-
 	// 设置路由
 	routes.SetupRoutes(r, logger, cfg)
 
 	// 启动服务器
 	serverAddr := fmt.Sprintf(":%s", cfg.Server.Port)
 	logger.Infof("Server starting on %s", serverAddr)
-	if err := r.Run(serverAddr); err != nil {
-		logger.Fatalf("Failed to start server: %v", err)
+	if cfg.Server.TLS.Enable {
+		if err := r.RunTLS(serverAddr,
+			cfg.Server.TLS.CertFile,
+			cfg.Server.TLS.KeyFile); err != nil {
+			logger.Fatalf("Failed to start HTTPS server: %v", err)
+		}
+	} else {
+		if err := r.Run(serverAddr); err != nil {
+			logger.Fatalf("Failed to start server: %v", err)
+		}
 	}
 }

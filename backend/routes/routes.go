@@ -22,13 +22,19 @@ func SetupRoutes(r *gin.Engine, logger *logrus.Logger, cfg *config.Config) {
 	rateLimiter := middleware.NewRateLimiter(cfg)
 	tokenAuther := middleware.NewTokenAuther(&cfg.JWT)
 
+	// CORS 配置
+	r.Use(middleware.CORS(cfg))
+
 	// 注入登录限制器到 gin context
 	r.Use(func(c *gin.Context) {
 		c.Set("login_limiter", loginLimiter)
 		c.Next()
 	})
 
+	// 安全响应头
 	r.Use(middleware.SecurityHeaders())
+
+	// XSS防护
 	r.Use(middleware.XSSProtection())
 
 	// API 版本控制
@@ -39,11 +45,13 @@ func SetupRoutes(r *gin.Engine, logger *logrus.Logger, cfg *config.Config) {
 	{
 		// 公有路由
 		public := blog.Group("")
+
+		// 公共API请求限制
 		public.Use(rateLimiter.PublicAPILimit())
 		{
 			// 用户相关
 			public.POST("/register", userController.Register)                              //注册
-			public.POST("/login", loginLimiter.CheckLoginAttempts(), userController.Login) //登录
+			public.POST("/login", loginLimiter.CheckLoginAttempts(), userController.Login) //登录（限制登录次数）
 			public.POST("/refresh", userController.RefreshToken)                           //刷新token
 
 			// 文章相关
@@ -59,11 +67,14 @@ func SetupRoutes(r *gin.Engine, logger *logrus.Logger, cfg *config.Config) {
 
 		// 私有路由
 		private := blog.Group("")
+
+		// token 认证
 		private.Use(tokenAuther.TokenAuth())
 		{
 			// 用户相关
 			private.POST("/logout", userController.Logout) // 退出登录
 
+			// RBAC 认证
 			private.Use(middleware.RBACAuth(cfg))
 			{
 				// 用户相关
