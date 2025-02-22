@@ -1,7 +1,7 @@
 <template>
   <header class="header">
     <div class="logo">
-      <router-link to="/">Keep Coding</router-link>
+      <router-link to="/">Keep Learning</router-link>
     </div>
     
     <div class="nav">
