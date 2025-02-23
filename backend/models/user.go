@@ -15,14 +15,14 @@ type User struct {
 	Roles     []Role    `gorm:"many2many:user_roles;constraint:OnDelete:CASCADE" json:"roles,omitempty"`
 }
 
-// RegisterRequest 注册请求结构体
+// RegisterRequest 注册请求
 type RegisterRequest struct {
 	Username string `json:"username" binding:"required"`
 	Password string `json:"password" binding:"required"`
 	Email    string `json:"email" binding:"required,email"`
 }
 
-// CreateUserRequest 创建用户请求结构体
+// CreateUserRequest 创建用户请求
 type CreateUserRequest struct {
 	Username string `json:"username" binding:"required"`
 	Password string `json:"password" binding:"required"`
@@ -30,21 +30,21 @@ type CreateUserRequest struct {
 	RoleID   uint   `json:"role_id" binding:"required"`
 }
 
-// LoginRequest 登录请求结构体
+// LoginRequest 登录请求
 type LoginRequest struct {
 	Username string `json:"username" binding:"required"`
 	Password string `json:"password" binding:"required"`
 	Email    string `json:"email" binding:"required,email"`
 }
 
-// UpdateUserRequest 更新用户请求结构体
+// UpdateUserRequest 更新用户请求
 type UpdateUserRequest struct {
 	Username string `json:"username" binding:"required"`
 	Password string `json:"password" binding:"required"`
 	Email    string `json:"email" binding:"required,email"`
 }
 
-// UpdateUserRolesRequest 更新用户角色请求结构体
+// UpdateUserRolesRequest 更新用户角色请求
 type UpdateUserRolesRequest struct {
 	RoleID uint `json:"role_id" binding:"required"`
 }

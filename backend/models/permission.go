@@ -18,7 +18,7 @@ type Permission struct {
 	Roles       []Role    `gorm:"many2many:role_permissions;constraint:OnDelete:CASCADE" json:"roles,omitempty"`
 }
 
-// CreatePermissionRequest 创建权限请求结构体
+// CreatePermissionRequest 创建权限请求
 type CreatePermissionRequest struct {
 	Name        string `json:"name" binding:"required"`
 	Code        string `json:"code" binding:"required"`
@@ -28,7 +28,7 @@ type CreatePermissionRequest struct {
 	IsDefault   *bool  `json:"is_default"`
 }
 
-// UpdatePermissionRequest 更新权限请求结构体
+// UpdatePermissionRequest 更新权限请求
 type UpdatePermissionRequest struct {
 	Name        string `json:"name" binding:"required"`
 	Code        string `json:"code" binding:"required"`

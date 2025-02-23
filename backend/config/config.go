@@ -78,7 +78,7 @@ func GetConfig() *Config {
 		Security: SecurityConfig{
 			EncryptionKey: getEnvOrDefault("ENCRYPTION_KEY", "12345678901234567890123456789012"), // 加密密钥
 		},
-		Log: LogConfig{
+		SystemLog: SystemLogConfig{
 			Level:         getEnvOrDefault("LOG_LEVEL", "info"),
 			FilePath:      getEnvOrDefault("LOG_FILE_PATH", "logs/app.log"),
 			ConsoleOutput: true,
@@ -86,6 +86,13 @@ func GetConfig() *Config {
 			MaxBackups:    10,   // 保留10个备份
 			MaxAge:        30,   // 保留30天
 			Compress:      true, // 压缩旧日志
+		},
+		AuditLog: AuditLogConfig{
+			Filename:   getEnvOrDefault("AUDIT_LOG_FILE_PATH", "logs/audit.log"),
+			MaxSize:    100,
+			MaxBackups: 10,
+			MaxAge:     30,
+			Compress:   true,
 		},
 	}
 }
@@ -99,7 +106,8 @@ type Config struct {
 	RateLimit RateLimitConfig
 	CORS      CORSConfig
 	Security  SecurityConfig
-	Log       LogConfig
+	SystemLog SystemLogConfig
+	AuditLog  AuditLogConfig
 }
 
 // ServerConfig 服务器配置
@@ -169,7 +177,7 @@ type SecurityConfig struct {
 }
 
 // LogConfig 日志配置
-type LogConfig struct {
+type SystemLogConfig struct {
 	Level         string
 	FilePath      string
 	ConsoleOutput bool
@@ -177,6 +185,15 @@ type LogConfig struct {
 	MaxBackups    int
 	MaxAge        int
 	Compress      bool
+}
+
+// AuditLogConfig 审计日志配置
+type AuditLogConfig struct {
+	Filename   string
+	MaxSize    int
+	MaxBackups int
+	MaxAge     int
+	Compress   bool
 }
 
 // 获取环境变量，如果没有则使用默认值。

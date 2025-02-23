@@ -50,9 +50,9 @@ func SetupRoutes(r *gin.Engine, cfg *config.Config) {
 		public.Use(rateLimiter.PublicAPILimit())
 		{
 			// 用户相关
-			public.POST("/register", userController.Register)                              //注册
-			public.POST("/login", loginLimiter.CheckLoginAttempts(), userController.Login) //登录（限制登录次数）
-			public.POST("/refresh", userController.RefreshToken)                           //刷新token
+			public.POST("/register", userController.Register)                                                     //注册
+			public.POST("/login", middleware.AuditLog(), loginLimiter.CheckLoginAttempts(), userController.Login) //登录（审计日志/限制登录次数）
+			public.POST("/refresh", userController.RefreshToken)                                                  //刷新token
 
 			// 文章相关
 			public.GET("/posts", postController.GetAllPosts)                  // 获取所有文章
@@ -72,10 +72,13 @@ func SetupRoutes(r *gin.Engine, cfg *config.Config) {
 		private.Use(tokenAuther.TokenAuth())
 		{
 			// 用户相关
-			private.POST("/logout", userController.Logout) // 退出登录
+			private.POST("/logout", middleware.AuditLog(), userController.Logout) // 退出登录
 
 			// RBAC 认证
 			private.Use(middleware.RBACAuth(cfg))
+
+			// 审计日志
+			private.Use(middleware.AuditLog())
 			{
 				// 用户相关
 				private.POST("/user", userController.CreateUser) // 创建用户

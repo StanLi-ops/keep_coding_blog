@@ -1,4 +1,7 @@
-{"file":"db.go:244","func":"keep_learning_blog/db.InitBaseData()","level":"info","msg":"Base data initialized successfully","time":"2025-02-23T17:04:33+08:00"}
-{"file":"db.go:53","func":"keep_learning_blog/db.InitDB()","level":"info","msg":"Database connected and migrated successfully","time":"2025-02-23T17:04:33+08:00"}
-{"error":"dial tcp 192.168.1.88:6379: i/o timeout","file":"redis.go:37","func":"keep_learning_blog/db.InitRedis()","level":"error","msg":"Failed to connect to Redis","time":"2025-02-23T17:04:38+08:00"}
-{"file":"main.go:36","func":"main.main()","level":"fatal","msg":"Failed to initialize Redis: dial tcp 192.168.1.88:6379: i/o timeout","time":"2025-02-23T17:04:38+08:00"}
+{"level":"info","msg":"Base data initialized successfully","time":"2025-02-23T17:36:17+08:00"}
+{"level":"info","msg":"Database connected and migrated successfully","time":"2025-02-23T17:36:17+08:00"}
+{"level":"info","msg":"Redis connected successfully","time":"2025-02-23T17:36:17+08:00"}
+{"level":"info","msg":"Server starting on :8080","time":"2025-02-23T17:36:17+08:00"}
+{"level":"info","msg":"User logged in successfully","time":"2025-02-23T17:36:35+08:00","username":"SuperAdmin"}
+{"identifier":"SuperAdmin","level":"info","msg":"User logged in successfully","time":"2025-02-23T17:36:35+08:00","user_id":1,"username":"SuperAdmin"}
+{"identifier":"SuperAdmin","level":"info","msg":"Login attempts cleared after successful login","time":"2025-02-23T17:36:35+08:00"}

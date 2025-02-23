@@ -16,14 +16,14 @@ type Post struct {
 	UpdatedAt time.Time `json:"updated_at"`
 }
 
-// CreatePostRequest 创建文章请求结构体
+// CreatePostRequest 创建文章请求
 type CreatePostRequest struct {
 	Title    string   `json:"title" binding:"required"`
 	Content  string   `json:"content" binding:"required"`
 	TagNames []string `json:"tagNames"`
 }
 
-// UpdatePostRequest 更新文章请求结构体
+// UpdatePostRequest 更新文章请求
 type UpdatePostRequest struct {
 	Title    string   `json:"title" binding:"required"`
 	Content  string   `json:"content" binding:"required"`

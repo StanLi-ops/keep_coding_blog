@@ -16,13 +16,13 @@ type Comment struct {
 	UpdatedAt time.Time `json:"updated_at"`
 }
 
-// CreateCommentRequest 创建评论请求结构体
+// CreateCommentRequest 创建评论请求
 type CreateCommentRequest struct {
 	Content string `json:"content" binding:"required"`
 	PostID  uint   `json:"post_id" binding:"required"`
 }
 
-// UpdateCommentRequest 更新评论请求结构体
+// UpdateCommentRequest 更新评论请求
 type UpdateCommentRequest struct {
 	Content string `json:"content" binding:"required"`
 }

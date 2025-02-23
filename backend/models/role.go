@@ -17,7 +17,7 @@ type Role struct {
 	Users       []User       `gorm:"many2many:user_roles;constraint:OnDelete:CASCADE" json:"users,omitempty"`
 }
 
-// CreateRoleRequest 创建角色请求结构体
+// CreateRoleRequest 创建角色请求
 type CreateRoleRequest struct {
 	Name          string `json:"name" binding:"required"`
 	Code          string `json:"code" binding:"required"`
@@ -26,7 +26,7 @@ type CreateRoleRequest struct {
 	IsDefault     *bool  `json:"is_default"`
 }
 
-// UpdateRoleRequest 更新角色请求结构体
+// UpdateRoleRequest 更新角色请求
 type UpdateRoleRequest struct {
 	Name        string `json:"name" binding:"required"`
 	Code        string `json:"code" binding:"required"`
@@ -34,7 +34,7 @@ type UpdateRoleRequest struct {
 	IsDefault   *bool  `json:"is_default"`
 }
 
-// UpdatePermissionsRequest 更新角色权限请求结构体
+// UpdatePermissionsRequest 更新角色权限请求
 type UpdatePermissionsRequest struct {
 	PermissionIDs []uint `json:"permission_ids" binding:"required"`
 }

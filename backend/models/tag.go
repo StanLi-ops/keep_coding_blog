@@ -7,12 +7,12 @@ type Tag struct {
 	Posts []Post `gorm:"many2many:post_tags;constraint:OnDelete:CASCADE" json:"-"`
 }
 
-// CreateTagRequest 创建标签请求结构体
+// CreateTagRequest 创建标签请求
 type CreateTagRequest struct {
 	Name string `json:"name" binding:"required"`
 }
 
-// UpdateTagRequest 更新标签请求结构体
+// UpdateTagRequest 更新标签请求
 type UpdateTagRequest struct {
 	Name string `json:"name" binding:"required"`
 }

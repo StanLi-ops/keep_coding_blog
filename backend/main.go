@@ -18,7 +18,7 @@ func main() {
 	cfg := config.GetConfig()
 
 	// 初始化日志
-	if err := logger.InitLogger(&cfg.Log); err != nil {
+	if err := logger.InitLogger(cfg); err != nil {
 		fmt.Printf("Failed to setup logger: %v\n", err)
 		os.Exit(1)
 	}
