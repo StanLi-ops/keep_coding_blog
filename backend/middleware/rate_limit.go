@@ -5,8 +5,9 @@ import (
 	"fmt"
 	"net/http"
 
-	"keep_coding_blog/config"
-	"keep_coding_blog/db"
+	"keep_learning_blog/config"
+	"keep_learning_blog/db"
+	"keep_learning_blog/utils/logger"
 
 	"github.com/gin-gonic/gin"
 )
@@ -37,6 +38,7 @@ func (rl *RateLimiter) RateLimit(limit int) gin.HandlerFunc {
 		// 获取当前请求数
 		count, err := db.GetRateLimit(context.Background(), key)
 		if err != nil {
+			logger.Log.WithError(err).Error("Rate limit check failed")
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Rate limit check failed"})
 			c.Abort()
 			return
@@ -56,6 +58,13 @@ func (rl *RateLimiter) RateLimit(limit int) gin.HandlerFunc {
 
 		// 检查是否超过限制
 		if count >= limit {
+			logger.Log.WithFields(logger.Fields(map[string]interface{}{
+				"identifier": identifier,
+				"path":       c.FullPath(),
+				"count":      count,
+				"limit":      limit,
+			})).Warn("Rate limit exceeded")
+
 			c.JSON(http.StatusTooManyRequests, gin.H{
 				"error":       "Rate limit exceeded",
 				"retry_after": rl.config.RateLimit.Duration.Seconds(),

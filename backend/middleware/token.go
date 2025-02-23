@@ -2,11 +2,13 @@ package middleware
 
 import (
 	"errors"
-	"keep_coding_blog/config"
-	"keep_coding_blog/db"
+	"keep_learning_blog/config"
+	"keep_learning_blog/db"
 	"net/http"
 	"strings"
 	"time"
+
+	"keep_learning_blog/utils/logger"
 
 	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt"
@@ -114,14 +116,15 @@ func (t *TokenAuther) TokenAuth() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		authHeader := c.GetHeader("Authorization")
 		if authHeader == "" {
+			logger.Log.Warn("Missing Authorization header")
 			c.JSON(http.StatusUnauthorized, gin.H{"error": "Authorization header is required"})
 			c.Abort()
 			return
 		}
 
-		// 检查 Authorization header 格式
 		parts := strings.Split(authHeader, " ")
 		if len(parts) != 2 || parts[0] != "Bearer" {
+			logger.Log.Warn("Invalid authorization header format")
 			c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid authorization header format"})
 			c.Abort()
 			return
@@ -141,6 +144,7 @@ func (t *TokenAuther) TokenAuth() gin.HandlerFunc {
 
 		// 检查 access token 是否有效
 		if err != nil || !token.Valid {
+			logger.Log.WithError(err).Warn("Invalid token")
 			c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid token"})
 			c.Abort()
 			return
@@ -148,6 +152,11 @@ func (t *TokenAuther) TokenAuth() gin.HandlerFunc {
 
 		// 检查 access token 是否在黑名单中
 		if db.IsBlacklisted(c, claims.TokenID) {
+			logger.Log.WithFields(logger.Fields(map[string]interface{}{
+				"token_id": claims.TokenID,
+				"user_id":  claims.UserID,
+			})).Warn("Token has been revoked")
+
 			c.JSON(http.StatusUnauthorized, gin.H{"error": "Token has been revoked"})
 			c.Abort()
 			return

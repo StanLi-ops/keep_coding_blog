@@ -2,8 +2,9 @@ package service
 
 import (
 	"errors"
-	"keep_coding_blog/db"
-	"keep_coding_blog/models"
+	"keep_learning_blog/db"
+	"keep_learning_blog/models"
+	"keep_learning_blog/utils/logger"
 )
 
 // CommentService 评论服务结构体
@@ -11,8 +12,14 @@ type CommentService struct{}
 
 // CreateComment 创建评论 (insert)
 func (s *CommentService) CreateComment(content string, postID, userID uint) (*models.Comment, error) {
+	log := logger.Log.WithFields(logger.Fields(map[string]interface{}{
+		"postID": postID,
+		"userID": userID,
+	}))
+
 	// 验证数据合法性
 	if content == "" || postID == 0 || userID == 0 {
+		log.Warn("Invalid comment data")
 		return nil, errors.New("content, postID, and userID cannot be empty")
 	}
 	if len(content) > 1000 {
@@ -52,11 +59,17 @@ func (s *CommentService) CreateComment(content string, postID, userID uint) (*mo
 		return nil, err
 	}
 
+	log.Info("Comment created successfully")
 	return comment, tx.Commit().Error
 }
 
 // UpdateComment 更新评论 (update)
 func (s *CommentService) UpdateComment(commentID, userID uint, content string) (*models.Comment, error) {
+	log := logger.Log.WithFields(logger.Fields(map[string]interface{}{
+		"commentID": commentID,
+		"userID":    userID,
+	}))
+
 	// 验证数据合法性
 	if content == "" || commentID == 0 || userID == 0 {
 		return nil, errors.New("content, commentID, and userID cannot be empty")
@@ -76,6 +89,7 @@ func (s *CommentService) UpdateComment(commentID, userID uint, content string) (
 	// 检查评论是否存在
 	var comment models.Comment
 	if err := tx.First(&comment, commentID).Error; err != nil {
+		log.WithError(err).Error("Failed to find comment")
 		tx.Rollback()
 		return nil, errors.New("comment not found")
 	}
@@ -99,11 +113,17 @@ func (s *CommentService) UpdateComment(commentID, userID uint, content string) (
 		return nil, err
 	}
 
+	log.Info("Comment updated successfully")
 	return &comment, tx.Commit().Error
 }
 
 // DeleteComment 删除评论 (delete)
 func (s *CommentService) DeleteComment(commentID, userID uint) error {
+	log := logger.Log.WithFields(logger.Fields(map[string]interface{}{
+		"commentID": commentID,
+		"userID":    userID,
+	}))
+
 	// 验证数据合法性
 	if commentID == 0 || userID == 0 {
 		return errors.New("commentID and userID cannot be empty")
@@ -136,5 +156,6 @@ func (s *CommentService) DeleteComment(commentID, userID uint) error {
 		return err
 	}
 
+	log.Info("Comment deleted successfully")
 	return tx.Commit().Error
 }

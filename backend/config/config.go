@@ -78,6 +78,15 @@ func GetConfig() *Config {
 		Security: SecurityConfig{
 			EncryptionKey: getEnvOrDefault("ENCRYPTION_KEY", "12345678901234567890123456789012"), // 加密密钥
 		},
+		Log: LogConfig{
+			Level:         getEnvOrDefault("LOG_LEVEL", "info"),
+			FilePath:      getEnvOrDefault("LOG_FILE_PATH", "logs/app.log"),
+			ConsoleOutput: true,
+			MaxSize:       100,  // 100MB
+			MaxBackups:    10,   // 保留10个备份
+			MaxAge:        30,   // 保留30天
+			Compress:      true, // 压缩旧日志
+		},
 	}
 }
 
@@ -90,6 +99,7 @@ type Config struct {
 	RateLimit RateLimitConfig
 	CORS      CORSConfig
 	Security  SecurityConfig
+	Log       LogConfig
 }
 
 // ServerConfig 服务器配置
@@ -156,6 +166,17 @@ type CORSConfig struct {
 // SecurityConfig 安全配置
 type SecurityConfig struct {
 	EncryptionKey string
+}
+
+// LogConfig 日志配置
+type LogConfig struct {
+	Level         string
+	FilePath      string
+	ConsoleOutput bool
+	MaxSize       int
+	MaxBackups    int
+	MaxAge        int
+	Compress      bool
 }
 
 // 获取环境变量，如果没有则使用默认值。

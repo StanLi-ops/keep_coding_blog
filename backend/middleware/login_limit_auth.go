@@ -4,9 +4,10 @@ import (
 	"net/http"
 	"time"
 
-	"keep_coding_blog/config"
-	"keep_coding_blog/db"
-	"keep_coding_blog/models"
+	"keep_learning_blog/config"
+	"keep_learning_blog/db"
+	"keep_learning_blog/models"
+	"keep_learning_blog/utils/logger"
 
 	"github.com/gin-gonic/gin"
 )
@@ -32,6 +33,7 @@ func (l *LoginLimiter) CheckLoginAttempts() gin.HandlerFunc {
 		// 获取用户名或邮箱（从请求体中获取）
 		var loginRequest models.LoginRequest
 		if err := c.ShouldBindJSON(&loginRequest); err != nil {
+			logger.Log.WithError(err).Warn("Invalid login request body")
 			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request body"})
 			c.Abort()
 			return
@@ -46,6 +48,12 @@ func (l *LoginLimiter) CheckLoginAttempts() gin.HandlerFunc {
 		// 检查是否被锁定
 		if db.IsLoginLocked(c.Request.Context(), identifier) {
 			remaining := db.GetLoginLockRemainingTime(c.Request.Context(), identifier)
+
+			logger.Log.WithFields(logger.Fields(map[string]interface{}{
+				"identifier": identifier,
+				"remaining":  remaining,
+			})).Warn("Account is temporarily locked")
+
 			c.JSON(http.StatusTooManyRequests, gin.H{
 				"error":             "Account is temporarily locked",
 				"remaining_minutes": int(remaining.Minutes()),

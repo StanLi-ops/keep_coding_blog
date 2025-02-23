@@ -1,10 +1,12 @@
 package middleware
 
 import (
-	"keep_coding_blog/config"
+	"keep_learning_blog/config"
 	"net/http"
 	"strconv"
 	"strings"
+
+	"keep_learning_blog/utils/logger"
 
 	"github.com/gin-gonic/gin"
 )
@@ -13,6 +15,13 @@ import (
 func CORS(cfg *config.Config) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		origin := c.Request.Header.Get("Origin")
+
+		// 记录 CORS 请求
+		logger.Log.WithFields(logger.Fields(map[string]interface{}{
+			"origin": origin,
+			"path":   c.Request.URL.Path,
+			"method": c.Request.Method,
+		})).Debug("Processing CORS request")
 
 		// 检查请求源是否在允许列表中
 		allowOrigin := ""
@@ -36,8 +45,12 @@ func CORS(cfg *config.Config) gin.HandlerFunc {
 			}
 		}
 
-		// 处理预检请求
+		// 记录预检请求
 		if c.Request.Method == http.MethodOptions {
+			logger.Log.WithFields(logger.Fields(map[string]interface{}{
+				"origin": origin,
+				"path":   c.Request.URL.Path,
+			})).Debug("Handling CORS preflight request")
 			c.AbortWithStatus(http.StatusNoContent)
 			return
 		}

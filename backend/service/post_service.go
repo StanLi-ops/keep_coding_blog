@@ -3,8 +3,9 @@ package service
 import (
 	"errors"
 	"fmt"
-	"keep_coding_blog/db"
-	"keep_coding_blog/models"
+	"keep_learning_blog/db"
+	"keep_learning_blog/models"
+	"keep_learning_blog/utils/logger"
 )
 
 // PostService 文章服务结构体
@@ -12,6 +13,12 @@ type PostService struct{}
 
 // CreatePost 创建文章 (insert)
 func (s *PostService) CreatePost(title, content string, userID uint, tagNames []string) (*models.Post, error) {
+	log := logger.Log.WithFields(logger.Fields(map[string]interface{}{
+		"title":    title,
+		"userID":   userID,
+		"tagCount": len(tagNames),
+	}))
+
 	fmt.Println(title, content, userID, tagNames)
 	// 验证数据合法性
 	if title == "" || content == "" || userID == 0 {
@@ -44,6 +51,7 @@ func (s *PostService) CreatePost(title, content string, userID uint, tagNames []
 	}
 
 	if err := tx.Create(post).Error; err != nil {
+		log.WithError(err).Error("Failed to create post")
 		tx.Rollback()
 		return nil, err
 	}
@@ -71,6 +79,7 @@ func (s *PostService) CreatePost(title, content string, userID uint, tagNames []
 		return nil, err
 	}
 
+	log.Info("Post created successfully")
 	return post, tx.Commit().Error
 }
 

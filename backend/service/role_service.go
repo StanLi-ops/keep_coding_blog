@@ -3,9 +3,10 @@ package service
 import (
 	"context"
 	"errors"
-	"keep_coding_blog/config"
-	"keep_coding_blog/db"
-	"keep_coding_blog/models"
+	"keep_learning_blog/config"
+	"keep_learning_blog/db"
+	"keep_learning_blog/models"
+	"keep_learning_blog/utils/logger"
 	"log"
 	"slices"
 )
@@ -15,6 +16,12 @@ type RoleService struct{}
 
 // CreateRole 创建角色 (insert)
 func (s *RoleService) CreateRole(name, code, description string, permissionIDs []uint, isDefault *bool) (*models.Role, error) {
+	log := logger.Log.WithFields(logger.Fields(map[string]interface{}{
+		"name":          name,
+		"code":          code,
+		"permissionIDs": permissionIDs,
+	}))
+
 	// 验证数据合法性
 	if name == "" || code == "" {
 		return nil, errors.New("name and code cannot be empty")
@@ -57,6 +64,7 @@ func (s *RoleService) CreateRole(name, code, description string, permissionIDs [
 	}
 
 	if err := tx.Create(role).Error; err != nil {
+		log.WithError(err).Error("Failed to create role")
 		tx.Rollback()
 		return nil, err
 	}
@@ -67,6 +75,7 @@ func (s *RoleService) CreateRole(name, code, description string, permissionIDs [
 		return nil, err
 	}
 
+	log.Info("Role created successfully")
 	return role, tx.Commit().Error
 }
 

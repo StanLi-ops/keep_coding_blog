@@ -6,10 +6,11 @@ import (
 	"crypto/cipher"
 	"crypto/rand"
 	"encoding/base64"
-	"fmt"
 	"io"
-	"keep_coding_blog/config"
+	"keep_learning_blog/config"
 	"net/http"
+
+	"keep_learning_blog/utils/logger"
 
 	"github.com/gin-gonic/gin"
 )
@@ -33,10 +34,14 @@ func (c *encryptionConfig) EncryptionMiddleware() gin.HandlerFunc {
 	return func(ctx *gin.Context) {
 		// 只处理包含请求体的请求（POST, PUT, PATCH 等）
 		if ctx.Request.Body != nil && ctx.Request.ContentLength > 0 {
-			fmt.Println("解密请求体", ctx.Request.Body)
+			logger.Log.WithFields(logger.Fields(map[string]interface{}{
+				"path":           ctx.Request.URL.Path,
+				"content_length": ctx.Request.ContentLength,
+			})).Debug("Decrypting request body")
 
 			encryptedData, err := io.ReadAll(ctx.Request.Body)
 			if err != nil {
+				logger.Log.WithError(err).Error("Failed to read request body")
 				ctx.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "Failed to read request body"})
 				return
 			}
@@ -44,6 +49,7 @@ func (c *encryptionConfig) EncryptionMiddleware() gin.HandlerFunc {
 			// 解密请求数据
 			decryptedData, err := c.decrypt(encryptedData)
 			if err != nil {
+				logger.Log.WithError(err).Error("Failed to decrypt request")
 				ctx.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "Failed to decrypt request"})
 				return
 			}

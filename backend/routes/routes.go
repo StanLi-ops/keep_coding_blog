@@ -1,22 +1,22 @@
 package routes
 
 import (
-	"keep_coding_blog/api"
-	"keep_coding_blog/config"
-	"keep_coding_blog/middleware"
+	"keep_learning_blog/api"
+	"keep_learning_blog/config"
+	"keep_learning_blog/middleware"
 
 	"github.com/gin-gonic/gin"
-	"github.com/sirupsen/logrus"
 )
 
 // SetupRoutes 设置路由
-func SetupRoutes(r *gin.Engine, logger *logrus.Logger, cfg *config.Config) {
-	userController := api.NewUserController(logger, cfg)
-	postController := api.NewPostController(logger)
-	commentController := api.NewCommentController(logger)
-	tagController := api.NewTagController(logger)
-	roleController := api.NewRoleController(logger, cfg)
-	permissionController := api.NewPermissionController(logger)
+func SetupRoutes(r *gin.Engine, cfg *config.Config) {
+
+	userController := api.NewUserController(cfg)
+	postController := api.NewPostController()
+	commentController := api.NewCommentController()
+	tagController := api.NewTagController()
+	roleController := api.NewRoleController(cfg)
+	permissionController := api.NewPermissionController()
 
 	loginLimiter := middleware.NewLoginLimiter(cfg)
 	rateLimiter := middleware.NewRateLimiter(cfg)

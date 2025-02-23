@@ -3,10 +3,12 @@ package service
 import (
 	"context"
 	"errors"
-	"keep_coding_blog/config"
-	"keep_coding_blog/db"
-	"keep_coding_blog/models"
+	"keep_learning_blog/config"
+	"keep_learning_blog/db"
+	"keep_learning_blog/models"
 	"log"
+
+	"keep_learning_blog/utils/logger"
 
 	"golang.org/x/crypto/bcrypt"
 )
@@ -16,6 +18,11 @@ type UserService struct{}
 
 // Register 注册用户 (insert)
 func (s *UserService) Register(username, password, email string) (*models.User, error) {
+	log := logger.Log.WithFields(logger.Fields(map[string]interface{}{
+		"username": username,
+		"email":    email,
+	}))
+
 	// 验证数据合法性
 	if username == "" || password == "" || email == "" {
 		return nil, errors.New("username, password and email cannot be empty")
@@ -53,6 +60,7 @@ func (s *UserService) Register(username, password, email string) (*models.User, 
 	}
 
 	if err := tx.Create(&user).Error; err != nil {
+		log.WithError(err).Error("Failed to create user")
 		tx.Rollback()
 		return nil, err
 	}
@@ -70,6 +78,7 @@ func (s *UserService) Register(username, password, email string) (*models.User, 
 		return nil, err
 	}
 
+	log.Info("User registered successfully")
 	return &user, tx.Commit().Error
 }
 
@@ -134,16 +143,23 @@ func (s *UserService) CreateUser(username, password, email string, rolesID uint)
 
 // Login 登录用户 (select)
 func (s *UserService) Login(username, password string) (*models.User, error) {
+	log := logger.Log.WithFields(logger.Fields(map[string]interface{}{
+		"username": username,
+	}))
+
 	var user models.User
 	if err := db.DB.Where("username = ?", username).First(&user).Error; err != nil {
+		log.WithError(err).Warn("Login failed: user not found")
 		return nil, errors.New("user not found")
 	}
 
 	// 验证密码
 	if err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(password)); err != nil {
+		log.WithError(err).Warn("Login failed: invalid password")
 		return nil, errors.New("invalid password")
 	}
 
+	log.Info("User logged in successfully")
 	return &user, nil
 }
 

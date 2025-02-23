@@ -4,8 +4,9 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"keep_coding_blog/config"
-	"keep_coding_blog/models"
+	"keep_learning_blog/config"
+	"keep_learning_blog/models"
+	"keep_learning_blog/utils/logger"
 	"time"
 
 	"github.com/redis/go-redis/v9"
@@ -17,6 +18,7 @@ const (
 	LoginLockPrefix     = "login_lock:"
 )
 
+// RedisClient 全局Redis客户端
 var RedisClient *redis.Client
 
 // InitRedis 初始化Redis连接
@@ -31,54 +33,91 @@ func InitRedis(cfg *config.Config) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
-	_, err := RedisClient.Ping(ctx).Result()
-	return err
+	if _, err := RedisClient.Ping(ctx).Result(); err != nil {
+		logger.Log.WithError(err).Error("Failed to connect to Redis")
+		return err
+	}
+
+	logger.Log.Info("Redis connected successfully")
+	return nil
 }
 
 // AddToBlacklist 将token加入黑名单
 func AddToBlacklist(ctx context.Context, tokenID string, expiration time.Duration) error {
-	return RedisClient.Set(ctx, fmt.Sprintf("blacklist:%s", tokenID), true, expiration).Err()
+	// 将token加入黑名单
+	err := RedisClient.Set(ctx, fmt.Sprintf("blacklist:%s", tokenID), true, expiration).Err()
+	if err != nil {
+		logger.Log.WithFields(logger.Fields(map[string]interface{}{
+			"token_id": tokenID,
+			"error":    err,
+		})).Error("Failed to add token to blacklist")
+		return err
+	}
+
+	logger.Log.WithField("token_id", tokenID).Info("Token added to blacklist")
+	return nil
 }
 
 // IsBlacklisted 检查token是否在黑名单中
 func IsBlacklisted(ctx context.Context, tokenID string) bool {
+	// 检查token是否在黑名单中
 	exists, _ := RedisClient.Exists(ctx, fmt.Sprintf("blacklist:%s", tokenID)).Result()
 	return exists > 0
 }
 
 // SetUserPermissions 缓存用户权限
 func SetUserPermissions(ctx context.Context, userID uint, permissions []models.Permission, cfg *config.Config) error {
-	// 序列化权限数据
+	// 缓存用户权限
 	permissionsData, err := json.Marshal(permissions)
 	if err != nil {
+		logger.Log.WithError(err).Error("Failed to marshal permissions")
 		return err
 	}
 
-	// 设置缓存,带过期时间
+	// 设置缓存
 	key := fmt.Sprintf("%s%d", cfg.Redis.RBACPrefix, userID)
-	return RedisClient.Set(ctx, key, permissionsData, cfg.Redis.RBACCacheTTL).Err()
+	if err := RedisClient.Set(ctx, key, permissionsData, cfg.Redis.RBACCacheTTL).Err(); err != nil {
+		logger.Log.WithFields(logger.Fields(map[string]interface{}{
+			"user_id": userID,
+			"error":   err,
+		})).Error("Failed to cache user permissions")
+		return err
+	}
+
+	logger.Log.WithField("user_id", userID).Info("User permissions cached successfully")
+	return nil
 }
 
 // GetUserPermissions 获取用户权限缓存
 func GetUserPermissions(ctx context.Context, userID uint, cfg *config.Config) ([]models.Permission, error) {
+	// 获取用户权限缓存
 	key := fmt.Sprintf("%s%d", cfg.Redis.RBACPrefix, userID)
 	data, err := RedisClient.Get(ctx, key).Bytes()
 	if err != nil {
 		if err == redis.Nil {
+			logger.Log.WithField("user_id", userID).Debug("No cached permissions found")
 			return nil, nil
 		}
+		logger.Log.WithFields(logger.Fields(map[string]interface{}{
+			"user_id": userID,
+			"error":   err,
+		})).Error("Failed to get cached permissions")
 		return nil, err
 	}
 
+	// 解析权限数据
 	var permissions []models.Permission
 	if err := json.Unmarshal(data, &permissions); err != nil {
+		logger.Log.WithError(err).Error("Failed to unmarshal permissions")
 		return nil, err
 	}
+
 	return permissions, nil
 }
 
 // DeleteUserPermissions 删除用户权限缓存
 func DeleteUserPermissions(ctx context.Context, userID uint, cfg *config.Config) error {
+	// 删除用户权限缓存
 	key := fmt.Sprintf("%s%d", cfg.Redis.RBACPrefix, userID)
 	return RedisClient.Del(ctx, key).Err()
 }
@@ -123,24 +162,48 @@ func GetLoginLockRemainingTime(ctx context.Context, identifier string) time.Dura
 func RecordLoginAttempt(ctx context.Context, identifier string, success bool, maxAttempts int, lockDuration time.Duration) error {
 	key := fmt.Sprintf("%s%s", LoginAttemptsPrefix, identifier)
 
+	// 如果登录成功，则清除登录尝试
 	if success {
-		// 登录成功，清除失败记录
-		return RedisClient.Del(ctx, key).Err()
+		if err := RedisClient.Del(ctx, key).Err(); err != nil {
+			logger.Log.WithFields(logger.Fields(map[string]interface{}{
+				"identifier": identifier,
+				"error":      err,
+			})).Error("Failed to clear login attempts")
+			return err
+		}
+		logger.Log.WithField("identifier", identifier).Info("Login attempts cleared after successful login")
+		return nil
 	}
 
-	// 登录失败，增加计数
+	// 增加登录尝试次数
 	attempts, err := RedisClient.Incr(ctx, key).Result()
 	if err != nil {
+		logger.Log.WithFields(logger.Fields(map[string]interface{}{
+			"identifier": identifier,
+			"error":      err,
+		})).Error("Failed to record login attempt")
 		return err
 	}
 
-	// 设置键的过期时间（如果还没有设置）
-	RedisClient.Expire(ctx, key, lockDuration)
+	logger.Log.WithFields(logger.Fields(map[string]interface{}{
+		"identifier": identifier,
+		"attempts":   attempts,
+	})).Info("Login attempt recorded")
 
-	// 如果达到最大尝试次数，设置锁定状态
+	// 如果尝试次数达到上限，则锁定账户
 	if attempts >= int64(maxAttempts) {
 		lockKey := fmt.Sprintf("%s%s", LoginLockPrefix, identifier)
-		return RedisClient.Set(ctx, lockKey, "locked", lockDuration).Err()
+		if err := RedisClient.Set(ctx, lockKey, "locked", lockDuration).Err(); err != nil {
+			logger.Log.WithFields(logger.Fields(map[string]interface{}{
+				"identifier": identifier,
+				"error":      err,
+			})).Error("Failed to set account lock")
+			return err
+		}
+		logger.Log.WithFields(logger.Fields(map[string]interface{}{
+			"identifier":    identifier,
+			"lock_duration": lockDuration,
+		})).Warning("Account locked due to too many failed attempts")
 	}
 
 	return nil

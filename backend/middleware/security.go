@@ -1,12 +1,19 @@
 package middleware
 
 import (
+	"keep_learning_blog/utils/logger"
+
 	"github.com/gin-gonic/gin"
 )
 
 // SecurityHeaders 添加安全相关的 HTTP 响应头
 func SecurityHeaders() gin.HandlerFunc {
 	return func(c *gin.Context) {
+		logger.Log.WithFields(logger.Fields(map[string]interface{}{
+			"path":   c.Request.URL.Path,
+			"method": c.Request.Method,
+		})).Debug("Adding security headers")
+
 		// 基本安全头
 		c.Header("X-Content-Type-Options", "nosniff")
 		c.Header("X-Frame-Options", "DENY")

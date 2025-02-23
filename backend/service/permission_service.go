@@ -3,8 +3,9 @@ package service
 import (
 	"errors"
 	"fmt"
-	"keep_coding_blog/db"
-	"keep_coding_blog/models"
+	"keep_learning_blog/db"
+	"keep_learning_blog/models"
+	"keep_learning_blog/utils/logger"
 )
 
 // PermissionService 权限服务结构体
@@ -12,11 +13,20 @@ type PermissionService struct{}
 
 // CreatePermission 创建权限 (insert)
 func (s *PermissionService) CreatePermission(name, code, method, path, description string, isDefault *bool) (*models.Permission, error) {
+	log := logger.Log.WithFields(logger.Fields(map[string]interface{}{
+		"name":   name,
+		"code":   code,
+		"method": method,
+		"path":   path,
+	}))
+
 	// 验证数据合法性
 	if name == "" || code == "" || method == "" || path == "" {
+		log.Warn("Invalid permission data")
 		return nil, errors.New("name, code, method, and path cannot be empty")
 	}
 	if len(name) > 50 || len(code) > 50 || len(method) > 10 || len(path) > 128 {
+		log.Warn("Invalid permission length")
 		return nil, errors.New("name, code, method, and path must be less than 50, 10, and 128 characters respectively")
 	}
 
@@ -49,10 +59,12 @@ func (s *PermissionService) CreatePermission(name, code, method, path, descripti
 	}
 
 	if err := tx.Create(permission).Error; err != nil {
+		log.WithError(err).Error("Failed to create permission")
 		tx.Rollback()
 		return nil, fmt.Errorf("failed to create permission: %w", err)
 	}
 
+	log.Info("Permission created successfully")
 	return permission, tx.Commit().Error
 }
 

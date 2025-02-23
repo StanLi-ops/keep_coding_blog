@@ -1,10 +1,11 @@
 package middleware
 
 import (
-	"keep_coding_blog/config"
-	"keep_coding_blog/db"
-	"keep_coding_blog/models"
-	"keep_coding_blog/service"
+	"keep_learning_blog/config"
+	"keep_learning_blog/db"
+	"keep_learning_blog/models"
+	"keep_learning_blog/service"
+	"keep_learning_blog/utils/logger"
 	"log"
 	"net/http"
 	"strings"
@@ -21,6 +22,7 @@ func RBACAuth(cfg *config.Config) gin.HandlerFunc {
 		// 从上下文获取当前登录用户
 		userID, exists := c.Get("user_id")
 		if !exists {
+			logger.Log.Warn("User not logged in or login expired")
 			c.JSON(http.StatusUnauthorized, gin.H{
 				"message": "not logged in or login has expired",
 			})
@@ -31,6 +33,7 @@ func RBACAuth(cfg *config.Config) gin.HandlerFunc {
 		// 尝试从Redis获取权限
 		permissions, err := db.GetUserPermissions(c, userID.(uint), cfg)
 		if err != nil {
+			logger.Log.WithError(err).Error("Failed to get permissions from Redis")
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to get permissions"})
 			c.Abort()
 			return
@@ -61,6 +64,12 @@ func RBACAuth(cfg *config.Config) gin.HandlerFunc {
 
 		// 检查权限
 		if !checkPermission(permissions, method, path) {
+			logger.Log.WithFields(logger.Fields(map[string]interface{}{
+				"user_id": userID,
+				"path":    path,
+				"method":  method,
+			})).Warn("Permission denied")
+
 			c.JSON(http.StatusForbidden, gin.H{
 				"code":    http.StatusForbidden,
 				"message": "no permission to access",

@@ -2,10 +2,10 @@ package db
 
 import (
 	"fmt"
-	"keep_coding_blog/config"
-	"keep_coding_blog/models"
+	"keep_learning_blog/config"
+	"keep_learning_blog/models"
+	"keep_learning_blog/utils/logger"
 
-	"github.com/sirupsen/logrus"
 	"golang.org/x/crypto/bcrypt"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
@@ -15,7 +15,7 @@ import (
 var DB *gorm.DB
 
 // InitDB 初始化数据库
-func InitDB(cfg *config.Config, logger *logrus.Logger) error {
+func InitDB(cfg *config.Config) error {
 	// 构建数据库连接字符串
 	dsn := fmt.Sprintf("host=%s user=%s password=%s dbname=%s port=%s sslmode=disable TimeZone=Asia/Shanghai",
 		cfg.Database.Host,
@@ -28,7 +28,7 @@ func InitDB(cfg *config.Config, logger *logrus.Logger) error {
 	// 连接数据库
 	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})
 	if err != nil {
-		logger.WithError(err).Error("Failed to connect to database")
+		logger.Log.WithError(err).Error("Failed to connect to database")
 		return err
 	}
 
@@ -38,23 +38,24 @@ func InitDB(cfg *config.Config, logger *logrus.Logger) error {
 		&models.Post{}, &models.Tag{}, &models.Comment{},
 	)
 	if err != nil {
-		logger.WithError(err).Error("Failed to migrate database")
+		logger.Log.WithError(err).Error("Failed to migrate database")
 		return err
 	}
 
 	// 初始化基础数据
-	if err := InitBaseData(db, logger); err != nil {
-		logger.WithError(err).Error("Failed to initialize base data")
+	if err := InitBaseData(db); err != nil {
+		logger.Log.WithError(err).Error("Failed to initialize base data")
 		return err
 	}
 
+	// 设置数据库连接
 	DB = db
-	logger.Info("Database connected and migrated successfully")
+	logger.Log.Info("Database connected and migrated successfully")
 	return nil
 }
 
 // InitBaseData 初始化基础数据
-func InitBaseData(db *gorm.DB, logger *logrus.Logger) error {
+func InitBaseData(db *gorm.DB) error {
 	// 初始化权限
 	permissions := []models.Permission{
 		// 用户管理权限
@@ -116,7 +117,10 @@ func InitBaseData(db *gorm.DB, logger *logrus.Logger) error {
 	// 使用FirstOrCreate避免重复创建
 	for _, perm := range permissions {
 		if err := db.Where("code = ?", perm.Code).FirstOrCreate(&perm).Error; err != nil {
-			fmt.Println(err)
+			logger.Log.WithFields(logger.Fields(map[string]interface{}{
+				"permission_code": perm.Code,
+				"error":           err,
+			})).Error("Failed to create permission")
 			return err
 		}
 	}
@@ -144,6 +148,10 @@ func InitBaseData(db *gorm.DB, logger *logrus.Logger) error {
 	// 使用FirstOrCreate避免重复创建
 	for _, role := range roles {
 		if err := db.Where("code = ?", role.Code).FirstOrCreate(&role).Error; err != nil {
+			logger.Log.WithFields(logger.Fields(map[string]interface{}{
+				"role_code": role.Code,
+				"error":     err,
+			})).Error("Failed to create role")
 			return err
 		}
 	}
@@ -151,15 +159,20 @@ func InitBaseData(db *gorm.DB, logger *logrus.Logger) error {
 	// 为超级管理员角色分配所有权限
 	var superAdmin models.Role
 	if err := db.Where("code = ?", "SUPER_ADMIN").First(&superAdmin).Error; err != nil {
+		logger.Log.WithError(err).Error("Failed to find super admin role")
 		return err
 	}
 
+	// 获取所有权限
 	var allPermissions []models.Permission
 	if err := db.Find(&allPermissions).Error; err != nil {
+		logger.Log.WithError(err).Error("Failed to fetch all permissions")
 		return err
 	}
 
+	// 为超级管理员角色分配所有权限
 	if err := db.Model(&superAdmin).Association("Permissions").Replace(allPermissions); err != nil {
+		logger.Log.WithError(err).Error("Failed to assign permissions to super admin")
 		return err
 	}
 
@@ -169,6 +182,7 @@ func InitBaseData(db *gorm.DB, logger *logrus.Logger) error {
 		return err
 	}
 
+	// 获取内容管理员权限
 	var contentPermissions []models.Permission
 	if err := db.Where("code LIKE ? OR code LIKE ? OR code LIKE ?",
 		"post:%", "comment:%", "tag:%").
@@ -186,11 +200,13 @@ func InitBaseData(db *gorm.DB, logger *logrus.Logger) error {
 		return err
 	}
 
+	// 获取默认权限
 	var defaultPermissions []models.Permission
 	if err := db.Where("is_default = ?", true).Find(&defaultPermissions).Error; err != nil {
 		return err
 	}
 
+	// 为普通用户分配默认权限
 	if err := db.Model(&user).Association("Permissions").Replace(defaultPermissions); err != nil {
 		return err
 	}
@@ -199,25 +215,33 @@ func InitBaseData(db *gorm.DB, logger *logrus.Logger) error {
 	password := "123456"
 	passwordHash, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
 	if err != nil {
+		logger.Log.WithError(err).Error("Failed to hash password")
 		return err
 	}
 
+	// 创建默认管理员用户
 	superAdminUser := models.User{
 		Username: "SuperAdmin",
 		Password: string(passwordHash),
 		Email:    "SuperAdmin@example.com",
 	}
 
+	// 使用FirstOrCreate避免重复创建
 	if err := db.Where("username = ?", superAdminUser.Username).FirstOrCreate(&superAdminUser).Error; err != nil {
+		logger.Log.WithFields(logger.Fields(map[string]interface{}{
+			"username": superAdminUser.Username,
+			"error":    err,
+		})).Error("Failed to create super admin user")
 		return err
 	}
 
 	// 为管理员用户分配管理员角色
 	if err := db.Model(&superAdminUser).Association("Roles").Replace(&superAdmin); err != nil {
+		logger.Log.WithError(err).Error("Failed to assign role to super admin user")
 		return err
 	}
 
-	logger.Info("Base data initialized successfully")
+	logger.Log.Info("Base data initialized successfully")
 	return nil
 }
 

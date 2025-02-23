@@ -2,8 +2,9 @@ package service
 
 import (
 	"errors"
-	"keep_coding_blog/db"
-	"keep_coding_blog/models"
+	"keep_learning_blog/db"
+	"keep_learning_blog/models"
+	"keep_learning_blog/utils/logger"
 )
 
 // TagService 标签服务结构体
@@ -11,6 +12,10 @@ type TagService struct{}
 
 // CreateTag 创建标签 (insert)
 func (s *TagService) CreateTag(name string) (*models.Tag, error) {
+	log := logger.Log.WithFields(logger.Fields(map[string]interface{}{
+		"name": name,
+	}))
+
 	// 验证数据合法性
 	if name == "" {
 		return nil, errors.New("tag name cannot be empty")
@@ -38,10 +43,12 @@ func (s *TagService) CreateTag(name string) (*models.Tag, error) {
 	tag := &models.Tag{Name: name}
 
 	if err := tx.Create(tag).Error; err != nil {
+		log.WithError(err).Error("Failed to create tag")
 		tx.Rollback()
 		return nil, err
 	}
 
+	log.Info("Tag created successfully")
 	return tag, tx.Commit().Error
 }
 

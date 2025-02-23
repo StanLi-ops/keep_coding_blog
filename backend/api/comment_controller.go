@@ -1,28 +1,26 @@
 package api
 
 import (
-	"keep_coding_blog/models"
-	"keep_coding_blog/service"
+	"keep_learning_blog/models"
+	"keep_learning_blog/service"
 	"net/http"
 	"strconv"
 
-	"keep_coding_blog/middleware"
+	"keep_learning_blog/middleware"
+	"keep_learning_blog/utils/logger"
 
 	"github.com/gin-gonic/gin"
-	"github.com/sirupsen/logrus"
 )
 
-// CommentController 评论控制器结构体
+// CommentController 评论控制器
 type CommentController struct {
 	commentService service.CommentService
-	logger         *logrus.Logger
 }
 
-// NewCommentController 创建评论控制器实例
-func NewCommentController(logger *logrus.Logger) *CommentController {
+// NewCommentController 创建评论控制器
+func NewCommentController() *CommentController {
 	return &CommentController{
 		commentService: service.CommentService{},
-		logger:         logger,
 	}
 }
 
@@ -30,25 +28,34 @@ func NewCommentController(logger *logrus.Logger) *CommentController {
 func (c *CommentController) CreateComment(ctx *gin.Context) {
 	var req models.CreateCommentRequest
 	if err := ctx.ShouldBindJSON(&req); err != nil {
+		logger.Log.WithFields(logger.Fields(map[string]interface{}{
+			"error": err.Error(),
+		})).Error("Failed to bind comment request")
+
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request body"})
 		return
 	}
 
-	// 对评论内容使用 HTML 过滤
 	req.Content = middleware.SanitizeHTML(req.Content)
-
-	// 从上下文获取用户ID
 	userID := ctx.GetUint("user_id")
-	if userID == 0 {
-		ctx.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
-		return
-	}
 
 	comment, err := c.commentService.CreateComment(req.Content, req.PostID, userID)
 	if err != nil {
+		logger.Log.WithFields(logger.Fields(map[string]interface{}{
+			"error":   err.Error(),
+			"user_id": userID,
+			"post_id": req.PostID,
+		})).Error("Failed to create comment")
+
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
+
+	logger.Log.WithFields(logger.Fields(map[string]interface{}{
+		"comment_id": comment.ID,
+		"user_id":    userID,
+		"post_id":    req.PostID,
+	})).Info("Comment created successfully")
 
 	ctx.JSON(http.StatusOK, gin.H{
 		"message": "comment created successfully",
@@ -60,20 +67,26 @@ func (c *CommentController) CreateComment(ctx *gin.Context) {
 func (c *CommentController) UpdateComment(ctx *gin.Context) {
 	id, err := strconv.ParseUint(ctx.Param("id"), 10, 32)
 	if err != nil {
+		logger.Log.WithFields(logger.Fields(map[string]interface{}{
+			"error": err.Error(),
+			"id":    ctx.Param("id"),
+		})).Error("Invalid comment ID")
+
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid comment ID"})
 		return
 	}
 
 	var req models.UpdateCommentRequest
 	if err := ctx.ShouldBindJSON(&req); err != nil {
+		logger.Log.WithFields(logger.Fields(map[string]interface{}{
+			"error": err.Error(),
+		})).Error("Failed to bind update comment request")
+
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request body"})
 		return
 	}
 
-	// 对评论内容使用 HTML 过滤
 	req.Content = middleware.SanitizeHTML(req.Content)
-
-	// 从上下文获取用户ID
 	userID := ctx.GetUint("user_id")
 	if userID == 0 {
 		ctx.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
@@ -96,11 +109,15 @@ func (c *CommentController) UpdateComment(ctx *gin.Context) {
 func (c *CommentController) DeleteComment(ctx *gin.Context) {
 	id, err := strconv.ParseUint(ctx.Param("id"), 10, 32)
 	if err != nil {
+		logger.Log.WithFields(logger.Fields(map[string]interface{}{
+			"error": err.Error(),
+			"id":    ctx.Param("id"),
+		})).Error("Invalid comment ID")
+
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid comment ID"})
 		return
 	}
 
-	// 从上下文获取用户ID
 	userID := ctx.GetUint("user_id")
 	if userID == 0 {
 		ctx.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
